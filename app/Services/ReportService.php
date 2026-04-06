@@ -1,0 +1,212 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Report;
+use App\Models\ReportStatusHistory;
+use Illuminate\Support\Facades\DB;
+
+class ReportService
+{
+    private const VALID_TRANSITIONS = [
+        'draft' => ['generated'],
+        'generated' => ['sent', 'draft'],
+        'sent' => ['archived'],
+    ];
+
+    public function __construct(
+        private GitHubService $gitHubService,
+        private ClaudeService $claudeService,
+        private SshActivityService $sshService,
+    ) {}
+
+    public function create(array $data): Report
+    {
+        return DB::transaction(function () use ($data) {
+            $data['report_number'] = $data['report_number'] ?? Report::generateReportNumber();
+            $data['created_by'] = $data['created_by'] ?? auth()->id();
+            $data['status'] = 'draft';
+
+            $report = Report::create($data);
+
+            ReportStatusHistory::create([
+                'report_id' => $report->id,
+                'from_status' => null,
+                'to_status' => 'draft',
+                'changed_by' => auth()->id(),
+                'notes' => 'Report created',
+            ]);
+
+            return $report;
+        });
+    }
+
+    public function update(Report $report, array $data): Report
+    {
+        if ($report->status !== 'draft') {
+            throw new \RuntimeException('Only draft reports can be edited.');
+        }
+
+        $report->update($data);
+        return $report->fresh();
+    }
+
+    public function generate(Report $report): Report
+    {
+        if ($report->status !== 'draft') {
+            throw new \RuntimeException('Only draft reports can be generated.');
+        }
+
+        $since = $report->date_from->startOfDay()->toIso8601String();
+        $until = $report->date_to->endOfDay()->toIso8601String();
+        $clientName = $report->client->company_name;
+
+        // Fetch GitHub commits
+        $commits = $this->gitHubService->fetchCommitsForClient(
+            $report->client_id,
+            $since,
+            $until
+        );
+
+        // Fetch SSH server activity
+        $serverActivity = $this->sshService->fetchActivityForClient(
+            $report->client_id,
+            $since,
+            $until
+        );
+
+        // Require at least one data source
+        if (empty($commits) && empty($serverActivity)) {
+            throw new \RuntimeException('No commits or server activity found for the selected date range.');
+        }
+
+        $repos = collect($commits)->pluck('repo')->unique()->count();
+        $servers = \App\Models\ClientServer::where('client_id', $report->client_id)->where('is_active', true)->count();
+
+        // Generate AI summaries for available data
+        $commitSummary = !empty($commits)
+            ? $this->claudeService->summarizeCommits($commits, $clientName)
+            : null;
+
+        $serverSummary = !empty($serverActivity)
+            ? $this->claudeService->summarizeServerActivity($serverActivity, $clientName)
+            : null;
+
+        return DB::transaction(function () use ($report, $commits, $commitSummary, $repos, $serverActivity, $serverSummary, $servers) {
+            $updateData = [
+                'raw_commits' => $commits ?: null,
+                'ai_summary' => $commitSummary,
+                'commit_count' => count($commits),
+                'repo_count' => $repos,
+                'raw_server_activity' => $serverActivity ?: null,
+                'server_summary' => $serverSummary,
+                'server_count' => $servers,
+                'status' => 'generated',
+                'generated_at' => now(),
+            ];
+
+            $report->update($updateData);
+
+            $parts = [];
+            if (!empty($commits)) {
+                $parts[] = count($commits) . ' commits across ' . $repos . ' repo(s)';
+            }
+            if (!empty($serverActivity)) {
+                $parts[] = count($serverActivity) . ' server commands from ' . $servers . ' server(s)';
+            }
+
+            ReportStatusHistory::create([
+                'report_id' => $report->id,
+                'from_status' => 'draft',
+                'to_status' => 'generated',
+                'changed_by' => auth()->id(),
+                'notes' => implode(', ', $parts) . ' summarized',
+            ]);
+
+            return $report->fresh();
+        });
+    }
+
+    public function regenerate(Report $report): Report
+    {
+        if (!in_array($report->status, ['generated', 'draft'])) {
+            throw new \RuntimeException('Only draft or generated reports can be regenerated.');
+        }
+
+        DB::transaction(function () use ($report) {
+            if ($report->status === 'generated') {
+                $report->update([
+                    'status' => 'draft',
+                    'raw_commits' => null,
+                    'ai_summary' => null,
+                    'raw_server_activity' => null,
+                    'server_summary' => null,
+                    'commit_count' => 0,
+                    'repo_count' => 0,
+                    'server_count' => 0,
+                    'generated_at' => null,
+                ]);
+
+                ReportStatusHistory::create([
+                    'report_id' => $report->id,
+                    'from_status' => 'generated',
+                    'to_status' => 'draft',
+                    'changed_by' => auth()->id(),
+                    'notes' => 'Report reset for regeneration',
+                ]);
+            }
+        });
+
+        return $this->generate($report->fresh());
+    }
+
+    public function transition(Report $report, string $toStatus, ?string $notes = null): Report
+    {
+        $fromStatus = $report->status;
+        $allowed = self::VALID_TRANSITIONS[$fromStatus] ?? [];
+
+        if (!in_array($toStatus, $allowed)) {
+            throw new \RuntimeException("Cannot transition from '{$fromStatus}' to '{$toStatus}'.");
+        }
+
+        return DB::transaction(function () use ($report, $fromStatus, $toStatus, $notes) {
+            $report->update(['status' => $toStatus]);
+
+            ReportStatusHistory::create([
+                'report_id' => $report->id,
+                'from_status' => $fromStatus,
+                'to_status' => $toStatus,
+                'changed_by' => auth()->id(),
+                'notes' => $notes,
+            ]);
+
+            return $report->fresh();
+        });
+    }
+
+    public function markAsSent(Report $report, string $email): Report
+    {
+        $report = $this->transition($report, 'sent', "Sent to {$email}");
+
+        $report->update([
+            'sent_at' => now(),
+            'sent_to_email' => $email,
+        ]);
+
+        return $report->fresh();
+    }
+
+    public function delete(Report $report): void
+    {
+        if ($report->status === 'sent') {
+            throw new \RuntimeException('Sent reports cannot be deleted.');
+        }
+
+        $report->delete();
+    }
+
+    public function getValidTransitions(Report $report): array
+    {
+        return self::VALID_TRANSITIONS[$report->status] ?? [];
+    }
+}

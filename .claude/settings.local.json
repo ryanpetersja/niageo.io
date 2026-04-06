@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir:*)",
+      "Bash(php artisan:*)",
+      "Bash(composer require:*)",
+      "Bash(npm run build)",
+      "Bash(\"X:\\\\Xampp\\\\mysql\\\\bin\\\\mysql.exe\":*)",
+      "Bash(/c/xampp/mysql/bin/mysql.exe:*)",
+      "Bash(findstr:*)",
+      "Bash(npx vite build:*)",
+      "Bash(:)",
+      "Bash(php -l:*)",
+      "Bash(php:*)"
+    ]
+  }
+}
