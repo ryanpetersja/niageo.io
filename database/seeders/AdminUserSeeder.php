@@ -19,5 +19,15 @@ class AdminUserSeeder extends Seeder
                 'is_active' => true,
             ]
         );
+
+        User::updateOrCreate(
+            ['email' => 'sarah@niageo.io'],
+            [
+                'name' => 'Sarah Johnson',
+                'password' => Hash::make('password'),
+                'role' => 'staff',
+                'is_active' => true,
+            ]
+        );
     }
 }

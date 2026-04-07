@@ -10,10 +10,12 @@ class BrandingSettingsSeeder extends Seeder
     public function run(): void
     {
         BrandingSetting::firstOrCreate([], [
-            'company_name' => 'NiageoOps',
-            'email' => 'info@niageo.io',
-            'phone' => '',
-            'website' => 'https://niageo.io',
+            'company_name' => 'Niageo',
+            'email' => 'info@niageo.com',
+            'phone' => '876-543-3794',
+            'website' => 'https://niageo.com',
+            'address' => null,
+            'footer_text' => null,
         ]);
     }
 }

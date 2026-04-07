@@ -11,7 +11,14 @@ class DatabaseSeeder extends Seeder
         $this->call([
             AdminUserSeeder::class,
             BrandingSettingsSeeder::class,
-            DemoDataSeeder::class,
+            ClientSeeder::class,
+            PricingPresetSeeder::class,
+            InvoiceSeeder::class,
+            ClientRepositorySeeder::class,
+            ClientServerSeeder::class,
+            ReportSeeder::class,
+            MonitoredEndpointSeeder::class,
+            SubscriptionBillSeeder::class,
         ]);
     }
 }
