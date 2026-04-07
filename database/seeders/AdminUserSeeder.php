@@ -14,7 +14,7 @@ class AdminUserSeeder extends Seeder
             ['email' => 'admin@niageo.io'],
             [
                 'name' => 'Admin',
-                'password' => Hash::make('password'),
+                'password' => Hash::make('NIOEagle179!'),
                 'role' => 'admin',
                 'is_active' => true,
             ]
