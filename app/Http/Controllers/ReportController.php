@@ -5,10 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\Client;
 use App\Models\Invoice;
 use App\Models\Report;
+use App\Models\ReportFeedback;
+use App\Models\ReportPreference;
 use App\Services\ReportMailService;
 use App\Services\ReportPdfService;
 use App\Services\ReportService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class ReportController extends Controller
 {
@@ -78,10 +81,11 @@ class ReportController extends Controller
 
     public function show(Report $report)
     {
-        $report->load(['client.contacts', 'creator', 'invoice', 'statusHistory.changedBy']);
+        $report->load(['client.contacts', 'creator', 'invoice', 'statusHistory.changedBy', 'feedback.user']);
         $validTransitions = $this->reportService->getValidTransitions($report);
+        $preferences = ReportPreference::getSettings();
 
-        return view('reports.show', compact('report', 'validTransitions'));
+        return view('reports.show', compact('report', 'validTransitions', 'preferences'));
     }
 
     public function edit(Report $report)
@@ -252,6 +256,37 @@ class ReportController extends Controller
         $report->update(['server_summary' => $validated['server_summary']]);
 
         return response()->json(['success' => true]);
+    }
+
+    public function submitFeedback(Request $request, Report $report)
+    {
+        $validated = $request->validate([
+            'feedback' => 'required|string|max:2000',
+        ]);
+
+        $this->reportService->submitFeedback($report, $validated['feedback']);
+
+        try {
+            $this->reportService->processUnprocessedFeedback();
+        } catch (\Exception $e) {
+            Log::error('Failed to distill report feedback', ['error' => $e->getMessage()]);
+            return redirect()->route('reports.show', $report)
+                ->with('success', 'Feedback saved. Preference distillation will be retried later.');
+        }
+
+        return redirect()->route('reports.show', $report)
+            ->with('success', 'Feedback saved and preferences updated.');
+    }
+
+    public function preferences()
+    {
+        $preferences = ReportPreference::getSettings();
+        $recentFeedback = ReportFeedback::with('report', 'user')
+            ->orderBy('created_at', 'desc')
+            ->limit(50)
+            ->get();
+
+        return view('settings.report-preferences', compact('preferences', 'recentFeedback'));
     }
 
     public function clientInvoices(Client $client)

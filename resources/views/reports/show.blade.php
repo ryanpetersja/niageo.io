@@ -320,6 +320,52 @@
                         </script>
                     @endif
 
+                    <!-- Report Feedback -->
+                    @if(in_array($report->status, ['generated', 'sent']))
+                        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6" x-data="{ showFeedbackForm: false }">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-semibold text-gray-800">Report Feedback</h3>
+                                <button @click="showFeedbackForm = !showFeedbackForm" class="text-sm text-indigo-600 hover:text-indigo-800" x-text="showFeedbackForm ? 'Cancel' : 'Give Feedback'"></button>
+                            </div>
+
+                            <div x-show="showFeedbackForm" x-cloak class="mb-4">
+                                <form method="POST" action="{{ route('reports.feedback', $report) }}">
+                                    @csrf
+                                    <textarea name="feedback" rows="3" required maxlength="2000"
+                                        placeholder="e.g., Don't list routine updates as features. Be more specific about what changed for end users."
+                                        class="block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">{{ old('feedback') }}</textarea>
+                                    <p class="text-xs text-gray-400 mt-1">This feedback will be distilled into reusable rules that guide all future AI-generated reports.</p>
+                                    @error('feedback')
+                                        <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                                    @enderror
+                                    <div class="flex justify-end mt-2">
+                                        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md text-xs font-semibold uppercase hover:bg-indigo-700 transition">Submit Feedback</button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            @if($report->feedback->count() > 0)
+                                <div class="space-y-2">
+                                    @foreach($report->feedback as $entry)
+                                        <div class="p-3 bg-gray-50 rounded text-sm">
+                                            <div class="flex justify-between items-start">
+                                                <p class="text-gray-700">{{ $entry->feedback }}</p>
+                                                @if($entry->processed)
+                                                    <span class="ml-2 flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Processed</span>
+                                                @else
+                                                    <span class="ml-2 flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Pending</span>
+                                                @endif
+                                            </div>
+                                            <div class="text-xs text-gray-400 mt-1">{{ $entry->user->name }} &middot; {{ $entry->created_at->format('M d, Y H:i') }}</div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @elseif(!$report->feedback->count() && !isset($showFeedbackForm))
+                                <p class="text-sm text-gray-500">No feedback submitted for this report yet.</p>
+                            @endif
+                        </div>
+                    @endif
+
                     <!-- Raw Commits (Collapsible) -->
                     @if($report->raw_commits && count($report->raw_commits) > 0)
                         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6" x-data="{ showCommits: false }">
@@ -493,6 +539,30 @@
                             @endif
                         @endif
                     </div>
+
+                    <!-- AI Preferences -->
+                    @if(!empty($preferences->rules) && count($preferences->rules) > 0)
+                        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="text-sm font-semibold text-gray-800">AI Preferences</h3>
+                                <span class="text-xs text-gray-400">{{ count($preferences->rules) }} rules</span>
+                            </div>
+                            <ul class="space-y-1">
+                                @foreach($preferences->rules as $rule)
+                                    <li class="text-xs text-gray-600 flex items-start gap-1.5">
+                                        <span class="mt-1 w-1 h-1 rounded-full bg-indigo-400 flex-shrink-0"></span>
+                                        {{ Str::limit($rule, 80) }}
+                                    </li>
+                                @endforeach
+                            </ul>
+                            @if($preferences->last_distilled_at)
+                                <p class="text-xs text-gray-400 mt-3">Updated {{ $preferences->last_distilled_at->diffForHumans() }}</p>
+                            @endif
+                            @can('manage-settings')
+                                <a href="{{ route('settings.report-preferences') }}" class="text-xs text-indigo-600 hover:text-indigo-800 mt-2 inline-block">View all preferences</a>
+                            @endcan
+                        </div>
+                    @endif
 
                     <!-- Status History -->
                     <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">

@@ -68,6 +68,11 @@ class Report extends Model
         return $this->hasMany(ReportStatusHistory::class)->orderBy('created_at', 'desc');
     }
 
+    public function feedback(): HasMany
+    {
+        return $this->hasMany(ReportFeedback::class)->orderBy('created_at', 'desc');
+    }
+
     public function getHasSummaryAttribute(): bool
     {
         return !empty($this->ai_summary);

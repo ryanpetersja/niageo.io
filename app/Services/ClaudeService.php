@@ -7,7 +7,89 @@ use Illuminate\Support\Facades\Log;
 
 class ClaudeService
 {
-    public function summarizeCommits(array $commits, string $clientName): array
+    public function distillFeedback(array $feedbackTexts, array $currentRules): array
+    {
+        $apiKey = config('services.anthropic.api_key');
+        $model = config('services.anthropic.model', 'claude-sonnet-4-5-20250929');
+
+        if (empty($apiKey)) {
+            throw new \RuntimeException('Anthropic API key is not configured.');
+        }
+
+        $currentRulesList = !empty($currentRules)
+            ? collect($currentRules)->map(fn ($r, $i) => ($i + 1) . ". {$r}")->implode("\n")
+            : '(none)';
+
+        $feedbackList = collect($feedbackTexts)->map(fn ($f, $i) => ($i + 1) . ". {$f}")->implode("\n");
+
+        $systemPrompt = <<<PROMPT
+You are maintaining a set of preference rules that guide how AI-generated report summaries are written.
+
+Your job:
+1. Read the current rules and new user feedback
+2. Merge new feedback into the rules — add, update, or replace as needed
+3. If new feedback contradicts an existing rule, the NEW feedback wins (replace the old rule)
+4. Deduplicate — don't have two rules saying the same thing
+5. Keep rules concise, actionable, and specific
+6. Cap at 15 rules maximum — if over 15, merge or drop the least important
+7. Always respond with valid JSON only — no markdown fences, no explanation
+
+Each rule should be a clear instruction that can be appended to a report generation prompt.
+PROMPT;
+
+        $userPrompt = <<<PROMPT
+Current rules:
+{$currentRulesList}
+
+New feedback to incorporate:
+{$feedbackList}
+
+Return the updated rules as a JSON array of strings:
+["rule 1", "rule 2", ...]
+PROMPT;
+
+        $response = Http::withHeaders([
+            'x-api-key' => $apiKey,
+            'anthropic-version' => '2023-06-01',
+            'Content-Type' => 'application/json',
+        ])->timeout(60)->post('https://api.anthropic.com/v1/messages', [
+            'model' => $model,
+            'max_tokens' => 2048,
+            'system' => $systemPrompt,
+            'messages' => [
+                ['role' => 'user', 'content' => $userPrompt],
+            ],
+        ]);
+
+        if ($response->failed()) {
+            Log::error('Claude API failed (distill feedback)', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+            throw new \RuntimeException('Failed to distill feedback into preferences.');
+        }
+
+        $body = $response->json();
+        $text = $body['content'][0]['text'] ?? '';
+
+        $text = preg_replace('/^```(?:json)?\s*/m', '', $text);
+        $text = preg_replace('/\s*```$/m', '', $text);
+        $text = trim($text);
+
+        $rules = json_decode($text, true);
+
+        if (!is_array($rules)) {
+            Log::error('Claude returned invalid JSON (distill feedback)', ['text' => $text]);
+            throw new \RuntimeException('AI returned an invalid response while distilling feedback.');
+        }
+
+        // Ensure all items are strings and cap at 15
+        $rules = collect($rules)->filter(fn ($r) => is_string($r) && trim($r) !== '')->values()->take(15)->all();
+
+        return $rules;
+    }
+
+    public function summarizeCommits(array $commits, string $clientName, array $preferences = []): array
     {
         $apiKey = config('services.anthropic.api_key');
         $model = config('services.anthropic.model', 'claude-sonnet-4-5-20250929');
@@ -35,6 +117,16 @@ Rules:
 - Group related commits into single meaningful items rather than listing each commit separately
 - Always respond with valid JSON only — no markdown fences, no explanation
 PROMPT;
+
+        if (!empty($preferences)) {
+            $prefList = collect($preferences)->map(fn ($p) => "- {$p}")->implode("\n");
+            $systemPrompt .= <<<PROMPT
+
+
+Additional User Preferences (follow these as supplementary guidance):
+{$prefList}
+PROMPT;
+        }
 
         $userPrompt = <<<PROMPT
 Analyze these development commits and produce a client-friendly summary organized into exactly 5 categories. Each item must clearly explain what was done AND the direct benefit to the client's business or users.
@@ -108,7 +200,7 @@ PROMPT;
         return array_merge($defaults, $summary);
     }
 
-    public function summarizeServerActivity(array $commands, string $clientName): array
+    public function summarizeServerActivity(array $commands, string $clientName, array $preferences = []): array
     {
         $apiKey = config('services.anthropic.api_key');
         $model = config('services.anthropic.model', 'claude-sonnet-4-5-20250929');
@@ -137,6 +229,16 @@ Rules:
 - Group related commands into single meaningful items rather than listing each separately
 - Always respond with valid JSON only — no markdown fences, no explanation
 PROMPT;
+
+        if (!empty($preferences)) {
+            $prefList = collect($preferences)->map(fn ($p) => "- {$p}")->implode("\n");
+            $systemPrompt .= <<<PROMPT
+
+
+Additional User Preferences (follow these as supplementary guidance):
+{$prefList}
+PROMPT;
+        }
 
         $userPrompt = <<<PROMPT
 Analyze these server maintenance commands and produce a client-friendly summary organized into exactly 5 categories. These are commands run by the development team on the server hosting the client's application. Each item must clearly explain what was done AND the direct benefit.

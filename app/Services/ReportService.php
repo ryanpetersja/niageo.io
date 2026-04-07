@@ -3,8 +3,11 @@
 namespace App\Services;
 
 use App\Models\Report;
+use App\Models\ReportFeedback;
+use App\Models\ReportPreference;
 use App\Models\ReportStatusHistory;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ReportService
 {
@@ -83,13 +86,16 @@ class ReportService
         $repos = collect($commits)->pluck('repo')->unique()->count();
         $servers = \App\Models\ClientServer::where('client_id', $report->client_id)->where('is_active', true)->count();
 
+        // Fetch report preferences for AI guidance
+        $preferences = ReportPreference::getSettings()->rules ?? [];
+
         // Generate AI summaries for available data
         $commitSummary = !empty($commits)
-            ? $this->claudeService->summarizeCommits($commits, $clientName)
+            ? $this->claudeService->summarizeCommits($commits, $clientName, $preferences)
             : null;
 
         $serverSummary = !empty($serverActivity)
-            ? $this->claudeService->summarizeServerActivity($serverActivity, $clientName)
+            ? $this->claudeService->summarizeServerActivity($serverActivity, $clientName, $preferences)
             : null;
 
         return DB::transaction(function () use ($report, $commits, $commitSummary, $repos, $serverActivity, $serverSummary, $servers) {
@@ -208,5 +214,42 @@ class ReportService
     public function getValidTransitions(Report $report): array
     {
         return self::VALID_TRANSITIONS[$report->status] ?? [];
+    }
+
+    public function submitFeedback(Report $report, string $feedback): ReportFeedback
+    {
+        return ReportFeedback::create([
+            'report_id' => $report->id,
+            'user_id' => auth()->id(),
+            'feedback' => $feedback,
+        ]);
+    }
+
+    public function processUnprocessedFeedback(): void
+    {
+        $unprocessed = ReportFeedback::where('processed', false)->get();
+
+        if ($unprocessed->isEmpty()) {
+            return;
+        }
+
+        $feedbackTexts = $unprocessed->pluck('feedback')->all();
+        $currentRules = ReportPreference::getSettings()->rules ?? [];
+
+        DB::transaction(function () use ($feedbackTexts, $currentRules, $unprocessed) {
+            $updatedRules = $this->claudeService->distillFeedback($feedbackTexts, $currentRules);
+
+            $preferences = ReportPreference::getSettings();
+            $preferences->update([
+                'rules' => $updatedRules,
+                'last_distilled_at' => now(),
+            ]);
+
+            ReportFeedback::whereIn('id', $unprocessed->pluck('id'))
+                ->update([
+                    'processed' => true,
+                    'processed_at' => now(),
+                ]);
+        });
     }
 }

@@ -63,6 +63,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/reports/{report}/unlink-invoice', [ReportController::class, 'unlinkInvoice'])->name('reports.unlink-invoice');
     Route::get('/reports/{report}/pdf', [ReportController::class, 'pdf'])->name('reports.pdf');
     Route::get('/reports/{report}/pdf/download', [ReportController::class, 'downloadPdf'])->name('reports.pdf.download');
+    Route::post('/reports/{report}/feedback', [ReportController::class, 'submitFeedback'])->name('reports.feedback');
     Route::get('/api/clients/{client}/invoices', [ReportController::class, 'clientInvoices'])->name('api.client.invoices');
 
     // Uptime Monitoring
@@ -77,6 +78,7 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['can:manage-settings'])->group(function () {
         Route::get('/settings/branding', [BrandingSettingsController::class, 'edit'])->name('settings.branding');
         Route::put('/settings/branding', [BrandingSettingsController::class, 'update'])->name('settings.branding.update');
+        Route::get('/settings/report-preferences', [ReportController::class, 'preferences'])->name('settings.report-preferences');
     });
 
     Route::middleware(['can:manage-users'])->group(function () {
