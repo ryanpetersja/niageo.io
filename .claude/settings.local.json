@@ -11,7 +11,10 @@
       "Bash(npx vite build:*)",
       "Bash(:)",
       "Bash(php -l:*)",
-      "Bash(php:*)"
+      "Bash(php:*)",
+      "Bash(wc:*)",
+      "Bash(del \"X:\\\\Xampp\\\\htdocs\\\\Niageo_IO\\\\database\\\\seeders\\\\DemoDataSeeder.php\")",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nReplace demo seeders with production data seeders\n\nRemove DemoDataSeeder with fake client data and replace with\nindividual seeders reflecting actual database records: 6 real clients,\n3 pricing presets, 11 invoices with full line items and status history,\n2 GitHub repos, 1 server, 6 reports, 6 monitored endpoints, and 6\nsubscription bills. All seeders use updateOrCreate for safe re-runs.\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   }
 }

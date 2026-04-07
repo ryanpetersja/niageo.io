@@ -12,7 +12,13 @@ class GitHubService
 
     private function token(): string
     {
-        return config('services.github.token', '');
+        $token = config('services.github.token');
+
+        if (empty($token)) {
+            throw new \RuntimeException('GitHub token is not configured. Set GITHUB_TOKEN in your .env file and run php artisan config:cache.');
+        }
+
+        return $token;
     }
 
     public function fetchCommits(string $owner, string $repo, string $since, string $until, ?string $branch = null): array
