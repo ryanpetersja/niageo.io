@@ -64,6 +64,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/reports/{report}/pdf', [ReportController::class, 'pdf'])->name('reports.pdf');
     Route::get('/reports/{report}/pdf/download', [ReportController::class, 'downloadPdf'])->name('reports.pdf.download');
     Route::post('/reports/{report}/feedback', [ReportController::class, 'submitFeedback'])->name('reports.feedback');
+    Route::post('/reports/{report}/feedback/preview', [ReportController::class, 'previewFeedback'])->name('reports.feedback.preview');
+    Route::post('/reports/{report}/feedback/accept', [ReportController::class, 'acceptFeedback'])->name('reports.feedback.accept');
+    Route::post('/reports/{report}/feedback/reject', [ReportController::class, 'rejectFeedback'])->name('reports.feedback.reject');
     Route::get('/api/clients/{client}/invoices', [ReportController::class, 'clientInvoices'])->name('api.client.invoices');
 
     // Uptime Monitoring

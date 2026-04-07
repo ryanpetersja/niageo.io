@@ -74,7 +74,50 @@
                                 <div class="mb-3 text-xs font-medium" :class="saveError ? 'text-red-600' : 'text-green-600'" x-text="saveMessage"></div>
                             </template>
 
-                            <div class="space-y-4">
+                            <!-- Diff Preview Panel -->
+                            <template x-if="feedbackPreview">
+                                <div class="mb-4 border border-indigo-200 rounded-lg p-4 bg-indigo-50/50">
+                                    <div class="flex justify-between items-center mb-3">
+                                        <h4 class="text-sm font-semibold text-indigo-800">Proposed Changes Preview</h4>
+                                        <span class="text-xs text-indigo-500">Review the AI's suggested revisions</span>
+                                    </div>
+                                    <div class="space-y-3">
+                                        <template x-for="cat in categoryOrder" :key="'diff-' + cat.key">
+                                            <div x-show="getDiffItems(cat.key).removed.length > 0 || getDiffItems(cat.key).added.length > 0" class="border-l-4 rounded-r-lg p-3" :class="cat.borderClass">
+                                                <h5 class="font-semibold text-xs mb-1.5" :class="cat.textClass" x-text="cat.label"></h5>
+                                                <ul class="space-y-1">
+                                                    <template x-for="item in getDiffItems(cat.key).unchanged" :key="'u-' + cat.key + '-' + item">
+                                                        <li class="text-sm text-gray-400 flex items-start gap-2">
+                                                            <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-gray-300 flex-shrink-0"></span>
+                                                            <span x-text="item"></span>
+                                                        </li>
+                                                    </template>
+                                                    <template x-for="item in getDiffItems(cat.key).removed" :key="'r-' + cat.key + '-' + item">
+                                                        <li class="text-sm flex items-start gap-2 bg-red-100 rounded px-2 py-1">
+                                                            <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0"></span>
+                                                            <span class="line-through text-red-700" x-text="item"></span>
+                                                        </li>
+                                                    </template>
+                                                    <template x-for="item in getDiffItems(cat.key).added" :key="'a-' + cat.key + '-' + item">
+                                                        <li class="text-sm flex items-start gap-2 bg-green-100 rounded px-2 py-1">
+                                                            <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0"></span>
+                                                            <span class="text-green-700" x-text="item"></span>
+                                                        </li>
+                                                    </template>
+                                                </ul>
+                                            </div>
+                                        </template>
+                                    </div>
+                                    <div class="flex justify-end gap-2 mt-4">
+                                        <button @click="handleReject()" :disabled="feedbackLoading" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md text-xs font-semibold uppercase hover:bg-gray-50 transition disabled:opacity-50">Reject Changes</button>
+                                        <button @click="handleAccept()" :disabled="feedbackLoading" class="px-4 py-2 bg-green-600 text-white rounded-md text-xs font-semibold uppercase hover:bg-green-700 transition disabled:opacity-50">
+                                            <span x-text="feedbackLoading ? 'Saving...' : 'Accept Changes'"></span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <div class="space-y-4" x-show="!feedbackPreview">
                                 <template x-for="cat in categoryOrder" :key="cat.key">
                                     <div x-show="summary[cat.key] && summary[cat.key].length > 0 || editing" class="border-l-4 rounded-r-lg p-4" :class="cat.borderClass">
                                         <div class="flex justify-between items-center mb-2">
@@ -86,12 +129,37 @@
                                         </div>
                                         <ul class="space-y-1.5">
                                             <template x-for="(item, idx) in summary[cat.key]" :key="cat.key + '-' + idx">
-                                                <li class="text-sm text-gray-700 flex items-start gap-2">
+                                                <li class="text-sm text-gray-700 group">
                                                     <template x-if="!editing">
-                                                        <span class="flex items-start gap-2">
-                                                            <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" :class="cat.textClass"></span>
-                                                            <span x-text="item"></span>
-                                                        </span>
+                                                        <div>
+                                                            <div class="flex items-start gap-2">
+                                                                <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" :class="cat.textClass"></span>
+                                                                <span class="flex-1" x-text="item"></span>
+                                                                @if(!in_array($report->status, ['sent', 'archived']))
+                                                                    <button @click="openItemFeedback(cat.key, idx, item)"
+                                                                        class="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 p-1 rounded hover:bg-gray-200" title="Give feedback on this item">
+                                                                        <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+                                                                    </button>
+                                                                @endif
+                                                            </div>
+                                                            <!-- Inline per-item feedback popover -->
+                                                            <div x-show="feedbackItem && feedbackItem.category === cat.key && feedbackItem.index === idx" x-cloak
+                                                                class="mt-2 ml-4 p-3 bg-white border border-gray-200 rounded-lg shadow-sm">
+                                                                <textarea x-model="feedbackText" rows="2" maxlength="2000"
+                                                                    placeholder="e.g., This should be infrastructure, not a feature"
+                                                                    class="block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+                                                                <template x-if="feedbackError">
+                                                                    <p class="text-xs text-red-600 mt-1" x-text="feedbackError"></p>
+                                                                </template>
+                                                                <div class="flex justify-end gap-2 mt-2">
+                                                                    <button @click="closeItemFeedback()" class="text-xs text-gray-500 hover:text-gray-700">Cancel</button>
+                                                                    <button @click="previewItemFeedback()" :disabled="feedbackLoading || !feedbackText.trim()"
+                                                                        class="px-3 py-1 bg-indigo-600 text-white rounded text-xs font-medium hover:bg-indigo-700 disabled:opacity-50">
+                                                                        <span x-text="feedbackLoading ? 'Generating...' : 'Preview Changes'"></span>
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
                                                     </template>
                                                     <template x-if="editing">
                                                         <span class="flex items-start gap-1.5 w-full">
@@ -120,6 +188,13 @@
                                     saveMessage: '',
                                     saveError: false,
                                     reportId: {{ $report->id }},
+                                    summaryType: 'ai_summary',
+                                    // Per-item feedback state
+                                    feedbackItem: null,
+                                    feedbackText: '',
+                                    feedbackLoading: false,
+                                    feedbackError: '',
+                                    feedbackPreview: null,
                                     categoryOrder: [
                                         { key: 'features', label: 'Features Delivered', borderClass: 'border-green-400 bg-green-50', textClass: 'text-green-800' },
                                         { key: 'bugs', label: 'Bug Fixes', borderClass: 'border-red-400 bg-red-50', textClass: 'text-red-800' },
@@ -139,12 +214,131 @@
                                         this.dirty = true;
                                     },
 
+                                    openItemFeedback(category, index, text) {
+                                        if (this.feedbackItem && this.feedbackItem.category === category && this.feedbackItem.index === index) {
+                                            this.closeItemFeedback();
+                                            return;
+                                        }
+                                        this.feedbackItem = { category, index, text };
+                                        this.feedbackText = '';
+                                        this.feedbackError = '';
+                                        this.feedbackPreview = null;
+                                    },
+
+                                    closeItemFeedback() {
+                                        this.feedbackItem = null;
+                                        this.feedbackText = '';
+                                        this.feedbackError = '';
+                                    },
+
+                                    async previewItemFeedback() {
+                                        this.feedbackLoading = true;
+                                        this.feedbackError = '';
+                                        try {
+                                            const resp = await fetch(`/reports/${this.reportId}/feedback/preview`, {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                                                body: JSON.stringify({
+                                                    feedback: this.feedbackText,
+                                                    summary_type: this.summaryType,
+                                                    category: this.feedbackItem?.category || null,
+                                                    item_index: this.feedbackItem?.index ?? null,
+                                                    item_text: this.feedbackItem?.text || null,
+                                                })
+                                            });
+                                            if (resp.ok) {
+                                                this.feedbackPreview = await resp.json();
+                                            } else {
+                                                const err = await resp.json();
+                                                this.feedbackError = err.message || 'Failed to generate preview.';
+                                            }
+                                        } catch (e) {
+                                            this.feedbackError = 'Network error. Please try again.';
+                                        }
+                                        this.feedbackLoading = false;
+                                    },
+
+                                    getDiffItems(category) {
+                                        if (!this.feedbackPreview) return { unchanged: [], removed: [], added: [] };
+                                        const original = this.feedbackPreview.original[category] || [];
+                                        const proposed = this.feedbackPreview.proposed[category] || [];
+                                        const originalSet = new Set(original);
+                                        const proposedSet = new Set(proposed);
+                                        return {
+                                            unchanged: original.filter(i => proposedSet.has(i)),
+                                            removed: original.filter(i => !proposedSet.has(i)),
+                                            added: proposed.filter(i => !originalSet.has(i)),
+                                        };
+                                    },
+
+                                    async handleAccept() {
+                                        this.feedbackLoading = true;
+                                        try {
+                                            const resp = await fetch(`/reports/${this.reportId}/feedback/accept`, {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                                                body: JSON.stringify({
+                                                    feedback: this.feedbackText,
+                                                    summary_type: this.summaryType,
+                                                    category: this.feedbackItem?.category || null,
+                                                    item_index: this.feedbackItem?.index ?? null,
+                                                    item_text: this.feedbackItem?.text || null,
+                                                    proposed_summary: this.feedbackPreview.proposed,
+                                                })
+                                            });
+                                            if (resp.ok) {
+                                                const data = await resp.json();
+                                                this.summary = data.summary;
+                                                this.feedbackPreview = null;
+                                                this.closeItemFeedback();
+                                                this.saveMessage = 'Changes accepted and saved.';
+                                                this.saveError = false;
+                                                setTimeout(() => this.saveMessage = '', 3000);
+                                            } else {
+                                                const err = await resp.json();
+                                                this.feedbackError = err.message || 'Failed to accept changes.';
+                                            }
+                                        } catch (e) {
+                                            this.feedbackError = 'Network error. Please try again.';
+                                        }
+                                        this.feedbackLoading = false;
+                                    },
+
+                                    async handleReject() {
+                                        this.feedbackLoading = true;
+                                        try {
+                                            const resp = await fetch(`/reports/${this.reportId}/feedback/reject`, {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                                                body: JSON.stringify({
+                                                    feedback: this.feedbackText,
+                                                    summary_type: this.summaryType,
+                                                    category: this.feedbackItem?.category || null,
+                                                    item_index: this.feedbackItem?.index ?? null,
+                                                    item_text: this.feedbackItem?.text || null,
+                                                })
+                                            });
+                                            if (resp.ok) {
+                                                this.feedbackPreview = null;
+                                                this.closeItemFeedback();
+                                                this.saveMessage = 'Changes rejected. Feedback saved for future reports.';
+                                                this.saveError = false;
+                                                setTimeout(() => this.saveMessage = '', 3000);
+                                            } else {
+                                                const err = await resp.json();
+                                                this.feedbackError = err.message || 'Failed to reject changes.';
+                                            }
+                                        } catch (e) {
+                                            this.feedbackError = 'Network error. Please try again.';
+                                        }
+                                        this.feedbackLoading = false;
+                                    },
+
                                     async save() {
                                         this.saving = true;
                                         this.saveMessage = '';
                                         this.saveError = false;
 
-                                        // Filter out empty strings
                                         const cleaned = {};
                                         for (const key of ['features', 'bugs', 'improvements', 'security', 'infrastructure']) {
                                             cleaned[key] = (this.summary[key] || []).filter(s => s.trim() !== '');
@@ -213,7 +407,50 @@
                                 <div class="mb-3 text-xs font-medium" :class="saveError ? 'text-red-600' : 'text-green-600'" x-text="saveMessage"></div>
                             </template>
 
-                            <div class="space-y-4">
+                            <!-- Diff Preview Panel -->
+                            <template x-if="feedbackPreview">
+                                <div class="mb-4 border border-indigo-200 rounded-lg p-4 bg-indigo-50/50">
+                                    <div class="flex justify-between items-center mb-3">
+                                        <h4 class="text-sm font-semibold text-indigo-800">Proposed Changes Preview</h4>
+                                        <span class="text-xs text-indigo-500">Review the AI's suggested revisions</span>
+                                    </div>
+                                    <div class="space-y-3">
+                                        <template x-for="cat in categoryOrder" :key="'diff-' + cat.key">
+                                            <div x-show="getDiffItems(cat.key).removed.length > 0 || getDiffItems(cat.key).added.length > 0" class="border-l-4 rounded-r-lg p-3" :class="cat.borderClass">
+                                                <h5 class="font-semibold text-xs mb-1.5" :class="cat.textClass" x-text="cat.label"></h5>
+                                                <ul class="space-y-1">
+                                                    <template x-for="item in getDiffItems(cat.key).unchanged" :key="'u-' + cat.key + '-' + item">
+                                                        <li class="text-sm text-gray-400 flex items-start gap-2">
+                                                            <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-gray-300 flex-shrink-0"></span>
+                                                            <span x-text="item"></span>
+                                                        </li>
+                                                    </template>
+                                                    <template x-for="item in getDiffItems(cat.key).removed" :key="'r-' + cat.key + '-' + item">
+                                                        <li class="text-sm flex items-start gap-2 bg-red-100 rounded px-2 py-1">
+                                                            <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0"></span>
+                                                            <span class="line-through text-red-700" x-text="item"></span>
+                                                        </li>
+                                                    </template>
+                                                    <template x-for="item in getDiffItems(cat.key).added" :key="'a-' + cat.key + '-' + item">
+                                                        <li class="text-sm flex items-start gap-2 bg-green-100 rounded px-2 py-1">
+                                                            <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0"></span>
+                                                            <span class="text-green-700" x-text="item"></span>
+                                                        </li>
+                                                    </template>
+                                                </ul>
+                                            </div>
+                                        </template>
+                                    </div>
+                                    <div class="flex justify-end gap-2 mt-4">
+                                        <button @click="handleReject()" :disabled="feedbackLoading" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md text-xs font-semibold uppercase hover:bg-gray-50 transition disabled:opacity-50">Reject Changes</button>
+                                        <button @click="handleAccept()" :disabled="feedbackLoading" class="px-4 py-2 bg-green-600 text-white rounded-md text-xs font-semibold uppercase hover:bg-green-700 transition disabled:opacity-50">
+                                            <span x-text="feedbackLoading ? 'Saving...' : 'Accept Changes'"></span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <div class="space-y-4" x-show="!feedbackPreview">
                                 <template x-for="cat in categoryOrder" :key="cat.key">
                                     <div x-show="summary[cat.key] && summary[cat.key].length > 0 || editing" class="border-l-4 rounded-r-lg p-4" :class="cat.borderClass">
                                         <div class="flex justify-between items-center mb-2">
@@ -225,12 +462,36 @@
                                         </div>
                                         <ul class="space-y-1.5">
                                             <template x-for="(item, idx) in summary[cat.key]" :key="cat.key + '-' + idx">
-                                                <li class="text-sm text-gray-700 flex items-start gap-2">
+                                                <li class="text-sm text-gray-700 group">
                                                     <template x-if="!editing">
-                                                        <span class="flex items-start gap-2">
-                                                            <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" :class="cat.textClass"></span>
-                                                            <span x-text="item"></span>
-                                                        </span>
+                                                        <div>
+                                                            <div class="flex items-start gap-2">
+                                                                <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" :class="cat.textClass"></span>
+                                                                <span class="flex-1" x-text="item"></span>
+                                                                @if(!in_array($report->status, ['sent', 'archived']))
+                                                                    <button @click="openItemFeedback(cat.key, idx, item)"
+                                                                        class="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 p-1 rounded hover:bg-gray-200" title="Give feedback on this item">
+                                                                        <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+                                                                    </button>
+                                                                @endif
+                                                            </div>
+                                                            <div x-show="feedbackItem && feedbackItem.category === cat.key && feedbackItem.index === idx" x-cloak
+                                                                class="mt-2 ml-4 p-3 bg-white border border-gray-200 rounded-lg shadow-sm">
+                                                                <textarea x-model="feedbackText" rows="2" maxlength="2000"
+                                                                    placeholder="e.g., This should be infrastructure, not a feature"
+                                                                    class="block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+                                                                <template x-if="feedbackError">
+                                                                    <p class="text-xs text-red-600 mt-1" x-text="feedbackError"></p>
+                                                                </template>
+                                                                <div class="flex justify-end gap-2 mt-2">
+                                                                    <button @click="closeItemFeedback()" class="text-xs text-gray-500 hover:text-gray-700">Cancel</button>
+                                                                    <button @click="previewItemFeedback()" :disabled="feedbackLoading || !feedbackText.trim()"
+                                                                        class="px-3 py-1 bg-indigo-600 text-white rounded text-xs font-medium hover:bg-indigo-700 disabled:opacity-50">
+                                                                        <span x-text="feedbackLoading ? 'Generating...' : 'Preview Changes'"></span>
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
                                                     </template>
                                                     <template x-if="editing">
                                                         <span class="flex items-start gap-1.5 w-full">
@@ -259,6 +520,12 @@
                                     saveMessage: '',
                                     saveError: false,
                                     reportId: {{ $report->id }},
+                                    summaryType: 'server_summary',
+                                    feedbackItem: null,
+                                    feedbackText: '',
+                                    feedbackLoading: false,
+                                    feedbackError: '',
+                                    feedbackPreview: null,
                                     categoryOrder: [
                                         { key: 'features', label: 'Deployments & Updates', borderClass: 'border-green-400 bg-green-50', textClass: 'text-green-800' },
                                         { key: 'bugs', label: 'Server-Side Fixes', borderClass: 'border-red-400 bg-red-50', textClass: 'text-red-800' },
@@ -276,6 +543,126 @@
                                     removeItem(category, index) {
                                         this.summary[category].splice(index, 1);
                                         this.dirty = true;
+                                    },
+
+                                    openItemFeedback(category, index, text) {
+                                        if (this.feedbackItem && this.feedbackItem.category === category && this.feedbackItem.index === index) {
+                                            this.closeItemFeedback();
+                                            return;
+                                        }
+                                        this.feedbackItem = { category, index, text };
+                                        this.feedbackText = '';
+                                        this.feedbackError = '';
+                                        this.feedbackPreview = null;
+                                    },
+
+                                    closeItemFeedback() {
+                                        this.feedbackItem = null;
+                                        this.feedbackText = '';
+                                        this.feedbackError = '';
+                                    },
+
+                                    async previewItemFeedback() {
+                                        this.feedbackLoading = true;
+                                        this.feedbackError = '';
+                                        try {
+                                            const resp = await fetch(`/reports/${this.reportId}/feedback/preview`, {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                                                body: JSON.stringify({
+                                                    feedback: this.feedbackText,
+                                                    summary_type: this.summaryType,
+                                                    category: this.feedbackItem?.category || null,
+                                                    item_index: this.feedbackItem?.index ?? null,
+                                                    item_text: this.feedbackItem?.text || null,
+                                                })
+                                            });
+                                            if (resp.ok) {
+                                                this.feedbackPreview = await resp.json();
+                                            } else {
+                                                const err = await resp.json();
+                                                this.feedbackError = err.message || 'Failed to generate preview.';
+                                            }
+                                        } catch (e) {
+                                            this.feedbackError = 'Network error. Please try again.';
+                                        }
+                                        this.feedbackLoading = false;
+                                    },
+
+                                    getDiffItems(category) {
+                                        if (!this.feedbackPreview) return { unchanged: [], removed: [], added: [] };
+                                        const original = this.feedbackPreview.original[category] || [];
+                                        const proposed = this.feedbackPreview.proposed[category] || [];
+                                        const originalSet = new Set(original);
+                                        const proposedSet = new Set(proposed);
+                                        return {
+                                            unchanged: original.filter(i => proposedSet.has(i)),
+                                            removed: original.filter(i => !proposedSet.has(i)),
+                                            added: proposed.filter(i => !originalSet.has(i)),
+                                        };
+                                    },
+
+                                    async handleAccept() {
+                                        this.feedbackLoading = true;
+                                        try {
+                                            const resp = await fetch(`/reports/${this.reportId}/feedback/accept`, {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                                                body: JSON.stringify({
+                                                    feedback: this.feedbackText,
+                                                    summary_type: this.summaryType,
+                                                    category: this.feedbackItem?.category || null,
+                                                    item_index: this.feedbackItem?.index ?? null,
+                                                    item_text: this.feedbackItem?.text || null,
+                                                    proposed_summary: this.feedbackPreview.proposed,
+                                                })
+                                            });
+                                            if (resp.ok) {
+                                                const data = await resp.json();
+                                                this.summary = data.summary;
+                                                this.feedbackPreview = null;
+                                                this.closeItemFeedback();
+                                                this.saveMessage = 'Changes accepted and saved.';
+                                                this.saveError = false;
+                                                setTimeout(() => this.saveMessage = '', 3000);
+                                            } else {
+                                                const err = await resp.json();
+                                                this.feedbackError = err.message || 'Failed to accept changes.';
+                                            }
+                                        } catch (e) {
+                                            this.feedbackError = 'Network error. Please try again.';
+                                        }
+                                        this.feedbackLoading = false;
+                                    },
+
+                                    async handleReject() {
+                                        this.feedbackLoading = true;
+                                        try {
+                                            const resp = await fetch(`/reports/${this.reportId}/feedback/reject`, {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                                                body: JSON.stringify({
+                                                    feedback: this.feedbackText,
+                                                    summary_type: this.summaryType,
+                                                    category: this.feedbackItem?.category || null,
+                                                    item_index: this.feedbackItem?.index ?? null,
+                                                    item_text: this.feedbackItem?.text || null,
+                                                })
+                                            });
+                                            if (resp.ok) {
+                                                this.feedbackPreview = null;
+                                                this.closeItemFeedback();
+                                                this.saveMessage = 'Changes rejected. Feedback saved for future reports.';
+                                                this.saveError = false;
+                                                setTimeout(() => this.saveMessage = '', 3000);
+                                            } else {
+                                                const err = await resp.json();
+                                                this.feedbackError = err.message || 'Failed to reject changes.';
+                                            }
+                                        } catch (e) {
+                                            this.feedbackError = 'Network error. Please try again.';
+                                        }
+                                        this.feedbackLoading = false;
                                     },
 
                                     async save() {
@@ -321,48 +708,265 @@
                     @endif
 
                     <!-- Report Feedback -->
-                    @if(in_array($report->status, ['generated', 'sent']))
-                        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6" x-data="{ showFeedbackForm: false }">
+                    @if(in_array($report->status, ['generated']))
+                        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6" x-data="generalFeedback()">
                             <div class="flex justify-between items-center mb-4">
                                 <h3 class="text-lg font-semibold text-gray-800">Report Feedback</h3>
-                                <button @click="showFeedbackForm = !showFeedbackForm" class="text-sm text-indigo-600 hover:text-indigo-800" x-text="showFeedbackForm ? 'Cancel' : 'Give Feedback'"></button>
+                                <button @click="showForm = !showForm; if(showForm) feedbackPreview = null;" class="text-sm text-indigo-600 hover:text-indigo-800" x-text="showForm ? 'Cancel' : 'Give Feedback'"></button>
                             </div>
 
-                            <div x-show="showFeedbackForm" x-cloak class="mb-4">
-                                <form method="POST" action="{{ route('reports.feedback', $report) }}">
-                                    @csrf
-                                    <textarea name="feedback" rows="3" required maxlength="2000"
-                                        placeholder="e.g., Don't list routine updates as features. Be more specific about what changed for end users."
-                                        class="block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">{{ old('feedback') }}</textarea>
-                                    <p class="text-xs text-gray-400 mt-1">This feedback will be distilled into reusable rules that guide all future AI-generated reports.</p>
-                                    @error('feedback')
-                                        <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
-                                    @enderror
-                                    <div class="flex justify-end mt-2">
-                                        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md text-xs font-semibold uppercase hover:bg-indigo-700 transition">Submit Feedback</button>
-                                    </div>
-                                </form>
+                            <div x-show="showForm && !feedbackPreview" x-cloak class="mb-4">
+                                <div class="mb-2">
+                                    <label class="text-xs font-medium text-gray-600 mb-1 block">Apply feedback to:</label>
+                                    <select x-model="summaryType" class="rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                        @if($report->has_summary)
+                                            <option value="ai_summary">Development Summary</option>
+                                        @endif
+                                        @if($report->has_server_summary)
+                                            <option value="server_summary">Server Activity Summary</option>
+                                        @endif
+                                    </select>
+                                </div>
+                                <textarea x-model="feedbackText" rows="3" maxlength="2000"
+                                    placeholder="e.g., Don't list routine updates as features. Be more specific about what changed for end users."
+                                    class="block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+                                <p class="text-xs text-gray-400 mt-1">Feedback will revise the current report and be distilled into rules for future reports.</p>
+                                <template x-if="feedbackError">
+                                    <p class="text-xs text-red-600 mt-1" x-text="feedbackError"></p>
+                                </template>
+                                <div class="flex justify-end mt-2">
+                                    <button @click="previewFeedback()" :disabled="feedbackLoading || !feedbackText.trim()"
+                                        class="px-4 py-2 bg-indigo-600 text-white rounded-md text-xs font-semibold uppercase hover:bg-indigo-700 transition disabled:opacity-50">
+                                        <span x-text="feedbackLoading ? 'Generating Preview...' : 'Preview Changes'"></span>
+                                    </button>
+                                </div>
                             </div>
+
+                            <!-- Diff Preview for General Feedback -->
+                            <template x-if="feedbackPreview">
+                                <div class="mb-4 border border-indigo-200 rounded-lg p-4 bg-indigo-50/50">
+                                    <div class="flex justify-between items-center mb-3">
+                                        <h4 class="text-sm font-semibold text-indigo-800">Proposed Changes Preview</h4>
+                                        <span class="text-xs text-indigo-500">Review the AI's suggested revisions</span>
+                                    </div>
+                                    <div class="space-y-3">
+                                        <template x-for="cat in categoryOrder" :key="'gdiff-' + cat.key">
+                                            <div x-show="getGeneralDiffItems(cat.key).removed.length > 0 || getGeneralDiffItems(cat.key).added.length > 0" class="border-l-4 rounded-r-lg p-3" :class="cat.borderClass">
+                                                <h5 class="font-semibold text-xs mb-1.5" :class="cat.textClass" x-text="cat.label"></h5>
+                                                <ul class="space-y-1">
+                                                    <template x-for="item in getGeneralDiffItems(cat.key).unchanged" :key="'gu-' + cat.key + '-' + item">
+                                                        <li class="text-sm text-gray-400 flex items-start gap-2">
+                                                            <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-gray-300 flex-shrink-0"></span>
+                                                            <span x-text="item"></span>
+                                                        </li>
+                                                    </template>
+                                                    <template x-for="item in getGeneralDiffItems(cat.key).removed" :key="'gr-' + cat.key + '-' + item">
+                                                        <li class="text-sm flex items-start gap-2 bg-red-100 rounded px-2 py-1">
+                                                            <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0"></span>
+                                                            <span class="line-through text-red-700" x-text="item"></span>
+                                                        </li>
+                                                    </template>
+                                                    <template x-for="item in getGeneralDiffItems(cat.key).added" :key="'ga-' + cat.key + '-' + item">
+                                                        <li class="text-sm flex items-start gap-2 bg-green-100 rounded px-2 py-1">
+                                                            <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0"></span>
+                                                            <span class="text-green-700" x-text="item"></span>
+                                                        </li>
+                                                    </template>
+                                                </ul>
+                                            </div>
+                                        </template>
+                                    </div>
+                                    <template x-if="feedbackError">
+                                        <p class="text-xs text-red-600 mt-2" x-text="feedbackError"></p>
+                                    </template>
+                                    <div class="flex justify-end gap-2 mt-4">
+                                        <button @click="rejectFeedback()" :disabled="feedbackLoading" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md text-xs font-semibold uppercase hover:bg-gray-50 transition disabled:opacity-50">Reject Changes</button>
+                                        <button @click="acceptFeedback()" :disabled="feedbackLoading" class="px-4 py-2 bg-green-600 text-white rounded-md text-xs font-semibold uppercase hover:bg-green-700 transition disabled:opacity-50">
+                                            <span x-text="feedbackLoading ? 'Saving...' : 'Accept Changes'"></span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <template x-if="statusMessage">
+                                <div class="mb-3 text-xs font-medium" :class="statusError ? 'text-red-600' : 'text-green-600'" x-text="statusMessage"></div>
+                            </template>
 
                             @if($report->feedback->count() > 0)
                                 <div class="space-y-2">
                                     @foreach($report->feedback as $entry)
                                         <div class="p-3 bg-gray-50 rounded text-sm">
                                             <div class="flex justify-between items-start">
-                                                <p class="text-gray-700">{{ $entry->feedback }}</p>
-                                                @if($entry->processed)
-                                                    <span class="ml-2 flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Processed</span>
-                                                @else
-                                                    <span class="ml-2 flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Pending</span>
-                                                @endif
+                                                <div>
+                                                    <p class="text-gray-700">{{ $entry->feedback }}</p>
+                                                    @if($entry->category)
+                                                        <span class="text-xs text-gray-400 mt-0.5 block">on {{ $entry->category }}{{ $entry->item_text ? ': "' . Str::limit($entry->item_text, 60) . '"' : '' }}</span>
+                                                    @endif
+                                                </div>
+                                                <div class="flex gap-1 ml-2 flex-shrink-0">
+                                                    @if($entry->resolution === 'accepted')
+                                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Accepted</span>
+                                                    @elseif($entry->resolution === 'rejected')
+                                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Rejected</span>
+                                                    @else
+                                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Pending</span>
+                                                    @endif
+                                                    @if($entry->processed)
+                                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Distilled</span>
+                                                    @endif
+                                                </div>
                                             </div>
                                             <div class="text-xs text-gray-400 mt-1">{{ $entry->user->name }} &middot; {{ $entry->created_at->format('M d, Y H:i') }}</div>
                                         </div>
                                     @endforeach
                                 </div>
-                            @elseif(!$report->feedback->count() && !isset($showFeedbackForm))
-                                <p class="text-sm text-gray-500">No feedback submitted for this report yet.</p>
+                            @else
+                                <p class="text-sm text-gray-500" x-show="!showForm">No feedback submitted for this report yet.</p>
                             @endif
+                        </div>
+
+                        <script>
+                            function generalFeedback() {
+                                return {
+                                    showForm: false,
+                                    summaryType: '{{ $report->has_summary ? "ai_summary" : "server_summary" }}',
+                                    feedbackText: '',
+                                    feedbackLoading: false,
+                                    feedbackError: '',
+                                    feedbackPreview: null,
+                                    statusMessage: '',
+                                    statusError: false,
+                                    reportId: {{ $report->id }},
+                                    categoryOrder: [
+                                        { key: 'features', label: 'Features', borderClass: 'border-green-400 bg-green-50', textClass: 'text-green-800' },
+                                        { key: 'bugs', label: 'Bug Fixes', borderClass: 'border-red-400 bg-red-50', textClass: 'text-red-800' },
+                                        { key: 'improvements', label: 'Improvements', borderClass: 'border-blue-400 bg-blue-50', textClass: 'text-blue-800' },
+                                        { key: 'security', label: 'Security', borderClass: 'border-purple-400 bg-purple-50', textClass: 'text-purple-800' },
+                                        { key: 'infrastructure', label: 'Infrastructure', borderClass: 'border-gray-400 bg-gray-50', textClass: 'text-gray-800' },
+                                    ],
+
+                                    async previewFeedback() {
+                                        this.feedbackLoading = true;
+                                        this.feedbackError = '';
+                                        try {
+                                            const resp = await fetch(`/reports/${this.reportId}/feedback/preview`, {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                                                body: JSON.stringify({ feedback: this.feedbackText, summary_type: this.summaryType })
+                                            });
+                                            if (resp.ok) {
+                                                this.feedbackPreview = await resp.json();
+                                            } else {
+                                                const err = await resp.json();
+                                                this.feedbackError = err.message || 'Failed to generate preview.';
+                                            }
+                                        } catch (e) {
+                                            this.feedbackError = 'Network error. Please try again.';
+                                        }
+                                        this.feedbackLoading = false;
+                                    },
+
+                                    getGeneralDiffItems(category) {
+                                        if (!this.feedbackPreview) return { unchanged: [], removed: [], added: [] };
+                                        const original = this.feedbackPreview.original[category] || [];
+                                        const proposed = this.feedbackPreview.proposed[category] || [];
+                                        const originalSet = new Set(original);
+                                        const proposedSet = new Set(proposed);
+                                        return {
+                                            unchanged: original.filter(i => proposedSet.has(i)),
+                                            removed: original.filter(i => !proposedSet.has(i)),
+                                            added: proposed.filter(i => !originalSet.has(i)),
+                                        };
+                                    },
+
+                                    async acceptFeedback() {
+                                        this.feedbackLoading = true;
+                                        this.feedbackError = '';
+                                        try {
+                                            const resp = await fetch(`/reports/${this.reportId}/feedback/accept`, {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                                                body: JSON.stringify({
+                                                    feedback: this.feedbackText,
+                                                    summary_type: this.summaryType,
+                                                    proposed_summary: this.feedbackPreview.proposed,
+                                                })
+                                            });
+                                            if (resp.ok) {
+                                                this.feedbackPreview = null;
+                                                this.showForm = false;
+                                                this.feedbackText = '';
+                                                this.statusMessage = 'Changes accepted and saved. Reload to see updated summary.';
+                                                this.statusError = false;
+                                                setTimeout(() => this.statusMessage = '', 5000);
+                                            } else {
+                                                const err = await resp.json();
+                                                this.feedbackError = err.message || 'Failed to accept changes.';
+                                            }
+                                        } catch (e) {
+                                            this.feedbackError = 'Network error. Please try again.';
+                                        }
+                                        this.feedbackLoading = false;
+                                    },
+
+                                    async rejectFeedback() {
+                                        this.feedbackLoading = true;
+                                        this.feedbackError = '';
+                                        try {
+                                            const resp = await fetch(`/reports/${this.reportId}/feedback/reject`, {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                                                body: JSON.stringify({ feedback: this.feedbackText, summary_type: this.summaryType })
+                                            });
+                                            if (resp.ok) {
+                                                this.feedbackPreview = null;
+                                                this.showForm = false;
+                                                this.feedbackText = '';
+                                                this.statusMessage = 'Changes rejected. Feedback saved for future reports.';
+                                                this.statusError = false;
+                                                setTimeout(() => this.statusMessage = '', 5000);
+                                            } else {
+                                                const err = await resp.json();
+                                                this.feedbackError = err.message || 'Failed to reject changes.';
+                                            }
+                                        } catch (e) {
+                                            this.feedbackError = 'Network error. Please try again.';
+                                        }
+                                        this.feedbackLoading = false;
+                                    },
+                                }
+                            }
+                        </script>
+                    @elseif(in_array($report->status, ['sent', 'archived']) && $report->feedback->count() > 0)
+                        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">Report Feedback</h3>
+                            <div class="space-y-2">
+                                @foreach($report->feedback as $entry)
+                                    <div class="p-3 bg-gray-50 rounded text-sm">
+                                        <div class="flex justify-between items-start">
+                                            <div>
+                                                <p class="text-gray-700">{{ $entry->feedback }}</p>
+                                                @if($entry->category)
+                                                    <span class="text-xs text-gray-400 mt-0.5 block">on {{ $entry->category }}{{ $entry->item_text ? ': "' . Str::limit($entry->item_text, 60) . '"' : '' }}</span>
+                                                @endif
+                                            </div>
+                                            <div class="flex gap-1 ml-2 flex-shrink-0">
+                                                @if($entry->resolution === 'accepted')
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Accepted</span>
+                                                @elseif($entry->resolution === 'rejected')
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Rejected</span>
+                                                @else
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Pending</span>
+                                                @endif
+                                                @if($entry->processed)
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Distilled</span>
+                                                @endif
+                                            </div>
+                                        </div>
+                                        <div class="text-xs text-gray-400 mt-1">{{ $entry->user->name }} &middot; {{ $entry->created_at->format('M d, Y H:i') }}</div>
+                                    </div>
+                                @endforeach
+                            </div>
                         </div>
                     @endif
 

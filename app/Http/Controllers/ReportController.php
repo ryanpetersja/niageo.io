@@ -278,6 +278,100 @@ class ReportController extends Controller
             ->with('success', 'Feedback saved and preferences updated.');
     }
 
+    public function previewFeedback(Request $request, Report $report)
+    {
+        if (in_array($report->status, ['sent', 'archived'])) {
+            return response()->json(['message' => 'Cannot provide feedback on sent or archived reports.'], 422);
+        }
+
+        $validated = $request->validate([
+            'feedback' => 'required|string|max:2000',
+            'summary_type' => 'required|in:ai_summary,server_summary',
+            'category' => 'nullable|string|in:features,bugs,improvements,security,infrastructure',
+            'item_index' => 'nullable|integer|min:0',
+            'item_text' => 'nullable|string|max:1000',
+        ]);
+
+        try {
+            $result = $this->reportService->previewFeedback($report, $validated);
+            return response()->json($result);
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+    }
+
+    public function acceptFeedback(Request $request, Report $report)
+    {
+        if (in_array($report->status, ['sent', 'archived'])) {
+            return response()->json(['message' => 'Cannot provide feedback on sent or archived reports.'], 422);
+        }
+
+        $validated = $request->validate([
+            'feedback' => 'required|string|max:2000',
+            'summary_type' => 'required|in:ai_summary,server_summary',
+            'category' => 'nullable|string|in:features,bugs,improvements,security,infrastructure',
+            'item_index' => 'nullable|integer|min:0',
+            'item_text' => 'nullable|string|max:1000',
+            'proposed_summary' => 'required|array',
+            'proposed_summary.features' => 'present|array',
+            'proposed_summary.bugs' => 'present|array',
+            'proposed_summary.improvements' => 'present|array',
+            'proposed_summary.security' => 'present|array',
+            'proposed_summary.infrastructure' => 'present|array',
+        ]);
+
+        try {
+            $feedback = $this->reportService->acceptFeedback(
+                $report,
+                $validated,
+                $validated['proposed_summary']
+            );
+
+            try {
+                $this->reportService->processUnprocessedFeedback();
+            } catch (\Exception $e) {
+                Log::error('Failed to distill report feedback after accept', ['error' => $e->getMessage()]);
+            }
+
+            $field = $validated['summary_type'] === 'ai_summary' ? 'ai_summary' : 'server_summary';
+            return response()->json([
+                'success' => true,
+                'summary' => $report->fresh()->$field,
+            ]);
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+    }
+
+    public function rejectFeedback(Request $request, Report $report)
+    {
+        if (in_array($report->status, ['sent', 'archived'])) {
+            return response()->json(['message' => 'Cannot provide feedback on sent or archived reports.'], 422);
+        }
+
+        $validated = $request->validate([
+            'feedback' => 'required|string|max:2000',
+            'summary_type' => 'nullable|in:ai_summary,server_summary',
+            'category' => 'nullable|string|in:features,bugs,improvements,security,infrastructure',
+            'item_index' => 'nullable|integer|min:0',
+            'item_text' => 'nullable|string|max:1000',
+        ]);
+
+        try {
+            $this->reportService->rejectFeedback($report, $validated);
+
+            try {
+                $this->reportService->processUnprocessedFeedback();
+            } catch (\Exception $e) {
+                Log::error('Failed to distill report feedback after reject', ['error' => $e->getMessage()]);
+            }
+
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+    }
+
     public function preferences()
     {
         $preferences = ReportPreference::getSettings();

@@ -13,6 +13,12 @@ class ReportFeedback extends Model
         'report_id',
         'user_id',
         'feedback',
+        'summary_type',
+        'category',
+        'item_index',
+        'item_text',
+        'proposed_summary',
+        'resolution',
         'processed',
         'processed_at',
     ];
@@ -20,6 +26,8 @@ class ReportFeedback extends Model
     protected $casts = [
         'processed' => 'boolean',
         'processed_at' => 'datetime',
+        'proposed_summary' => 'array',
+        'item_index' => 'integer',
     ];
 
     public function report(): BelongsTo

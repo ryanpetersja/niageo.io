@@ -225,6 +225,71 @@ class ReportService
         ]);
     }
 
+    public function previewFeedback(Report $report, array $data): array
+    {
+        $summaryType = $data['summary_type'];
+        $currentSummary = $summaryType === 'ai_summary' ? $report->ai_summary : $report->server_summary;
+
+        if (empty($currentSummary)) {
+            throw new \RuntimeException('No summary available to revise.');
+        }
+
+        $clientName = $report->client->company_name;
+
+        $proposed = $this->claudeService->reviseSummary(
+            $currentSummary,
+            $data['feedback'],
+            $clientName,
+            $data['category'] ?? null,
+            isset($data['item_index']) ? (int) $data['item_index'] : null,
+            $data['item_text'] ?? null,
+        );
+
+        return [
+            'original' => $currentSummary,
+            'proposed' => $proposed,
+            'summary_type' => $summaryType,
+        ];
+    }
+
+    public function acceptFeedback(Report $report, array $data, array $proposedSummary): ReportFeedback
+    {
+        return DB::transaction(function () use ($report, $data, $proposedSummary) {
+            $summaryType = $data['summary_type'];
+            $field = $summaryType === 'ai_summary' ? 'ai_summary' : 'server_summary';
+
+            $report->update([$field => $proposedSummary]);
+
+            $feedback = ReportFeedback::create([
+                'report_id' => $report->id,
+                'user_id' => auth()->id(),
+                'feedback' => $data['feedback'],
+                'summary_type' => $summaryType,
+                'category' => $data['category'] ?? null,
+                'item_index' => $data['item_index'] ?? null,
+                'item_text' => $data['item_text'] ?? null,
+                'proposed_summary' => $proposedSummary,
+                'resolution' => 'accepted',
+            ]);
+
+            return $feedback;
+        });
+    }
+
+    public function rejectFeedback(Report $report, array $data): ReportFeedback
+    {
+        return ReportFeedback::create([
+            'report_id' => $report->id,
+            'user_id' => auth()->id(),
+            'feedback' => $data['feedback'],
+            'summary_type' => $data['summary_type'] ?? null,
+            'category' => $data['category'] ?? null,
+            'item_index' => $data['item_index'] ?? null,
+            'item_text' => $data['item_text'] ?? null,
+            'resolution' => 'rejected',
+        ]);
+    }
+
     public function processUnprocessedFeedback(): void
     {
         $unprocessed = ReportFeedback::where('processed', false)->get();
