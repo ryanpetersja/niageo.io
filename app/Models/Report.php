@@ -86,19 +86,20 @@ class Report extends Model
     public function getSummaryItemCountAttribute(): int
     {
         $count = 0;
+        $categories = ['features', 'bugs', 'improvements', 'security', 'infrastructure'];
 
         if ($this->ai_summary) {
-            foreach ($this->ai_summary as $items) {
-                if (is_array($items)) {
-                    $count += count($items);
+            foreach ($categories as $key) {
+                if (isset($this->ai_summary[$key]) && is_array($this->ai_summary[$key])) {
+                    $count += count($this->ai_summary[$key]);
                 }
             }
         }
 
         if ($this->server_summary) {
-            foreach ($this->server_summary as $items) {
-                if (is_array($items)) {
-                    $count += count($items);
+            foreach ($categories as $key) {
+                if (isset($this->server_summary[$key]) && is_array($this->server_summary[$key])) {
+                    $count += count($this->server_summary[$key]);
                 }
             }
         }

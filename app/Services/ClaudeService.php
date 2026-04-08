@@ -152,11 +152,14 @@ Example bad items (too technical):
 
 If a category has no relevant items, use an empty array.
 
+IMPORTANT — commit_refs:
+Each commit in the input is tagged with a [sha] prefix. You MUST also return a "commit_refs" object that maps each category to an array of SHA arrays — one inner array per summary item, containing the short SHAs (from the [sha] tags) of the commits that contributed to that item. The arrays must align by index with the category items.
+
 Commits:
 {$commitList}
 
 Respond with JSON in this exact format:
-{"features":["..."],"bugs":["..."],"improvements":["..."],"security":["..."],"infrastructure":["..."]}
+{"features":["..."],"bugs":["..."],"improvements":["..."],"security":["..."],"infrastructure":["..."],"commit_refs":{"features":[["sha1","sha2"],["sha3"]],"bugs":[["sha4"]],"improvements":[],"security":[],"infrastructure":[]}}
 PROMPT;
 
         $response = Http::withHeaders([
@@ -195,9 +198,24 @@ PROMPT;
             throw new \RuntimeException('AI returned an invalid response. Please try again.');
         }
 
-        // Ensure all 5 keys exist
-        $defaults = ['features' => [], 'bugs' => [], 'improvements' => [], 'security' => [], 'infrastructure' => []];
-        return array_merge($defaults, $summary);
+        // Ensure all 5 category keys exist
+        $categories = ['features', 'bugs', 'improvements', 'security', 'infrastructure'];
+        $defaults = array_fill_keys($categories, []);
+        $summary = array_merge($defaults, $summary);
+
+        // Ensure commit_refs exists with correct structure
+        $commitRefs = $summary['commit_refs'] ?? [];
+        foreach ($categories as $cat) {
+            $catItems = $summary[$cat];
+            $refs = $commitRefs[$cat] ?? [];
+            // Pad or trim to match item count
+            $refs = array_slice(array_pad($refs, count($catItems), []), 0, count($catItems));
+            // Ensure each entry is an array of strings
+            $commitRefs[$cat] = array_map(fn ($r) => is_array($r) ? array_values($r) : [], $refs);
+        }
+        $summary['commit_refs'] = $commitRefs;
+
+        return $summary;
     }
 
     public function reviseSummary(array $currentSummary, string $feedback, string $clientName, ?string $category = null, ?int $itemIndex = null, ?string $itemText = null): array
@@ -216,13 +234,19 @@ You are revising a client-facing development/maintenance report summary for a cl
 
 The summary has 5 categories: features, bugs, improvements, security, infrastructure.
 Each category contains an array of plain-language bullet points.
+The summary may also contain a "commit_refs" object that maps each category to an array of SHA arrays (one per item, aligned by index).
 
 Your job:
 1. Read the current summary and the user's feedback
 2. Apply the feedback by revising the summary — you may reword, recategorize, remove, split, or merge items
 3. Keep the same plain-language, business-friendly style
-4. Return the full revised summary as valid JSON with all 5 keys
-5. Always respond with valid JSON only — no markdown fences, no explanation
+4. If "commit_refs" is present, maintain and update it to stay aligned with the revised items:
+   - When an item is moved to another category, move its SHA array too
+   - When items are merged, combine their SHA arrays
+   - When an item is split, distribute the SHAs appropriately
+   - When an item is removed, remove its SHA array
+5. Return the full revised summary as valid JSON with all 5 category keys plus "commit_refs" (if it was present in the input)
+6. Always respond with valid JSON only — no markdown fences, no explanation
 
 Do NOT add items that weren't in the original unless the feedback explicitly requests it.
 PROMPT;
@@ -237,7 +261,7 @@ PROMPT;
         }
 
         $userPrompt .= "User feedback:\n{$feedback}\n\n";
-        $userPrompt .= "Return the revised summary as JSON:\n{\"features\":[...],\"bugs\":[...],\"improvements\":[...],\"security\":[...],\"infrastructure\":[...]}";
+        $userPrompt .= "Return the revised summary as JSON (include commit_refs if present in the input):\n{\"features\":[...],\"bugs\":[...],\"improvements\":[...],\"security\":[...],\"infrastructure\":[...],\"commit_refs\":{\"features\":[[...],...],\"bugs\":[[...],...],\"improvements\":[...],\"security\":[...],\"infrastructure\":[...]}}";
 
         $response = Http::withHeaders([
             'x-api-key' => $apiKey,
@@ -274,8 +298,26 @@ PROMPT;
             throw new \RuntimeException('AI returned an invalid response. Please try again.');
         }
 
-        $defaults = ['features' => [], 'bugs' => [], 'improvements' => [], 'security' => [], 'infrastructure' => []];
-        return array_merge($defaults, $summary);
+        $categories = ['features', 'bugs', 'improvements', 'security', 'infrastructure'];
+        $defaults = array_fill_keys($categories, []);
+        $summary = array_merge($defaults, $summary);
+
+        // Preserve commit_refs if input had them — re-align with revised items
+        $inputHadRefs = isset($currentSummary['commit_refs']);
+        if ($inputHadRefs && isset($summary['commit_refs'])) {
+            $commitRefs = $summary['commit_refs'];
+            foreach ($categories as $cat) {
+                $refs = $commitRefs[$cat] ?? [];
+                $refs = array_slice(array_pad($refs, count($summary[$cat]), []), 0, count($summary[$cat]));
+                $commitRefs[$cat] = array_map(fn ($r) => is_array($r) ? array_values($r) : [], $refs);
+            }
+            $summary['commit_refs'] = $commitRefs;
+        } elseif ($inputHadRefs) {
+            // Claude didn't return commit_refs but input had them — carry forward from input
+            $summary['commit_refs'] = $currentSummary['commit_refs'];
+        }
+
+        return $summary;
     }
 
     public function summarizeServerActivity(array $commands, string $clientName, array $preferences = []): array

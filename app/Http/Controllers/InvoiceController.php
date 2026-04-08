@@ -163,8 +163,8 @@ class InvoiceController extends Controller
 
     public function destroy(Invoice $invoice)
     {
-        if ($invoice->status !== 'draft') {
-            return redirect()->route('invoices.show', $invoice)->with('error', 'Only draft invoices can be deleted.');
+        if (!in_array($invoice->status, ['draft', 'cancelled'])) {
+            return redirect()->route('invoices.show', $invoice)->with('error', 'Only draft or cancelled invoices can be deleted.');
         }
 
         $invoice->delete();

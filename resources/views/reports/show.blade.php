@@ -142,6 +142,22 @@
                                                                     </button>
                                                                 @endif
                                                             </div>
+                                                            <!-- Commit ref badges (internal only, hidden during editing/preview) -->
+                                                            <template x-if="getCommitRefs(cat.key, idx).length > 0">
+                                                                <div class="ml-4 mt-1 flex flex-wrap gap-1">
+                                                                    <template x-for="sha in getCommitRefs(cat.key, idx)" :key="sha">
+                                                                        <template x-if="getCommitUrl(sha)">
+                                                                            <a :href="getCommitUrl(sha)" target="_blank" rel="noopener noreferrer"
+                                                                                class="inline-block px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded text-[10px] font-mono leading-tight hover:bg-gray-200 hover:text-gray-700 transition"
+                                                                                x-text="sha.substring(0, 7)"></a>
+                                                                        </template>
+                                                                        <template x-if="!getCommitUrl(sha)">
+                                                                            <span class="inline-block px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded text-[10px] font-mono leading-tight"
+                                                                                x-text="sha.substring(0, 7)"></span>
+                                                                        </template>
+                                                                    </template>
+                                                                </div>
+                                                            </template>
                                                             <!-- Inline per-item feedback popover -->
                                                             <div x-show="feedbackItem && feedbackItem.category === cat.key && feedbackItem.index === idx" x-cloak
                                                                 class="mt-2 ml-4 p-3 bg-white border border-gray-200 rounded-lg shadow-sm">
@@ -182,6 +198,7 @@
                             function summaryEditor() {
                                 return {
                                     summary: @json($report->ai_summary),
+                                    rawCommits: @json($report->raw_commits ?? []),
                                     editing: false,
                                     dirty: false,
                                     saving: false,
@@ -206,12 +223,37 @@
                                     addItem(category) {
                                         if (!this.summary[category]) this.summary[category] = [];
                                         this.summary[category].push('');
+                                        if (this.summary.commit_refs && this.summary.commit_refs[category]) {
+                                            this.summary.commit_refs[category].push([]);
+                                        }
                                         this.dirty = true;
                                     },
 
                                     removeItem(category, index) {
                                         this.summary[category].splice(index, 1);
+                                        if (this.summary.commit_refs && this.summary.commit_refs[category]) {
+                                            this.summary.commit_refs[category].splice(index, 1);
+                                        }
                                         this.dirty = true;
+                                    },
+
+                                    getCommitRefs(category, index) {
+                                        if (!this.summary.commit_refs) return [];
+                                        const refs = this.summary.commit_refs[category];
+                                        if (!refs || !refs[index]) return [];
+                                        return refs[index];
+                                    },
+
+                                    getCommitUrl(sha) {
+                                        const commit = this.rawCommits.find(c => c.sha && c.sha.startsWith(sha));
+                                        if (commit && commit.repo) {
+                                            return `https://github.com/${commit.repo}/commit/${sha}`;
+                                        }
+                                        const repos = [...new Set(this.rawCommits.map(c => c.repo).filter(Boolean))];
+                                        if (repos.length === 1) {
+                                            return `https://github.com/${repos[0]}/commit/${sha}`;
+                                        }
+                                        return null;
                                     },
 
                                     openItemFeedback(category, index, text) {
@@ -340,8 +382,21 @@
                                         this.saveError = false;
 
                                         const cleaned = {};
+                                        const cleanedRefs = {};
                                         for (const key of ['features', 'bugs', 'improvements', 'security', 'infrastructure']) {
-                                            cleaned[key] = (this.summary[key] || []).filter(s => s.trim() !== '');
+                                            const items = this.summary[key] || [];
+                                            const refs = (this.summary.commit_refs && this.summary.commit_refs[key]) || [];
+                                            cleaned[key] = [];
+                                            cleanedRefs[key] = [];
+                                            items.forEach((s, i) => {
+                                                if (s.trim() !== '') {
+                                                    cleaned[key].push(s);
+                                                    cleanedRefs[key].push(refs[i] || []);
+                                                }
+                                            });
+                                        }
+                                        if (this.summary.commit_refs) {
+                                            cleaned.commit_refs = cleanedRefs;
                                         }
 
                                         try {

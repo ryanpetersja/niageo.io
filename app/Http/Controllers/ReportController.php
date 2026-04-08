@@ -231,9 +231,16 @@ class ReportController extends Controller
             'ai_summary.improvements' => 'present|array',
             'ai_summary.security' => 'present|array',
             'ai_summary.infrastructure' => 'present|array',
+            'ai_summary.commit_refs' => 'sometimes|array',
         ]);
 
-        $report->update(['ai_summary' => $validated['ai_summary']]);
+        // Preserve existing commit_refs if not provided in the request
+        $summary = $validated['ai_summary'];
+        if (!isset($summary['commit_refs']) && isset($report->ai_summary['commit_refs'])) {
+            $summary['commit_refs'] = $report->ai_summary['commit_refs'];
+        }
+
+        $report->update(['ai_summary' => $summary]);
 
         return response()->json(['success' => true]);
     }

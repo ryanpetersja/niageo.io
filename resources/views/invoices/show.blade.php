@@ -12,6 +12,13 @@
                     @csrf
                     <button type="submit" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md text-xs font-semibold uppercase text-gray-700 hover:bg-gray-50 transition">Duplicate</button>
                 </form>
+                @if(in_array($invoice->status, ['draft', 'cancelled']))
+                    <form method="POST" action="{{ route('invoices.destroy', $invoice) }}" class="inline" onsubmit="return confirm('Are you sure you want to delete this invoice? This cannot be undone.')">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-md text-xs font-semibold uppercase hover:bg-red-700 transition">Delete</button>
+                    </form>
+                @endif
             </div>
         </div>
     </x-slot>
