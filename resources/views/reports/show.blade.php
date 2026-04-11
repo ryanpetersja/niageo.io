@@ -8,7 +8,7 @@
                     <a href="{{ route('reports.pdf', $report) }}" target="_blank" class="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-md text-xs font-semibold uppercase hover:bg-gray-700 transition">Preview PDF</a>
                     <a href="{{ route('reports.pdf.download', $report) }}" class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md text-xs font-semibold uppercase hover:bg-green-700 transition">Download PDF</a>
                 @endif
-                @if($report->status === 'draft')
+                @if(!in_array($report->status, ['sent', 'archived']))
                     <a href="{{ route('reports.edit', $report) }}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md text-xs font-semibold uppercase text-gray-700 hover:bg-gray-50 transition">Edit</a>
                 @endif
             </div>

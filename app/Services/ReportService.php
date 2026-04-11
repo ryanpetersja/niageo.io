@@ -46,8 +46,8 @@ class ReportService
 
     public function update(Report $report, array $data): Report
     {
-        if ($report->status !== 'draft') {
-            throw new \RuntimeException('Only draft reports can be edited.');
+        if (in_array($report->status, ['sent', 'archived'])) {
+            throw new \RuntimeException('Sent or archived reports cannot be edited.');
         }
 
         $report->update($data);

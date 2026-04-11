@@ -91,8 +91,8 @@ class ReportController extends Controller
 
     public function edit(Report $report)
     {
-        if ($report->status !== 'draft') {
-            return redirect()->route('reports.show', $report)->with('error', 'Only draft reports can be edited.');
+        if (in_array($report->status, ['sent', 'archived'])) {
+            return redirect()->route('reports.show', $report)->with('error', 'Sent or archived reports cannot be edited.');
         }
 
         $clients = Client::where('is_active', true)
@@ -108,8 +108,8 @@ class ReportController extends Controller
 
     public function update(Request $request, Report $report)
     {
-        if ($report->status !== 'draft') {
-            return redirect()->route('reports.show', $report)->with('error', 'Only draft reports can be edited.');
+        if (in_array($report->status, ['sent', 'archived'])) {
+            return redirect()->route('reports.show', $report)->with('error', 'Sent or archived reports cannot be edited.');
         }
 
         $validated = $request->validate([
