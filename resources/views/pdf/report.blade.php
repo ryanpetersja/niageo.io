@@ -189,6 +189,28 @@
                     'security' => ['label' => 'Security & Stability', 'class' => 'category-security'],
                     'infrastructure' => ['label' => 'Infrastructure & Maintenance', 'class' => 'category-infrastructure'],
                 ];
+
+                $rawCommits = $report->raw_commits ?? [];
+                $commitRefs = $report->ai_summary['commit_refs'] ?? [];
+
+                function getItemDate($category, $index, $commitRefs, $rawCommits) {
+                    $refs = $commitRefs[$category][$index] ?? [];
+                    if (empty($refs)) return null;
+                    $dates = [];
+                    foreach ($refs as $sha) {
+                        foreach ($rawCommits as $c) {
+                            if (isset($c['sha']) && str_starts_with($c['sha'], $sha) && !empty($c['date'])) {
+                                $dates[] = strtotime($c['date']);
+                                break;
+                            }
+                        }
+                    }
+                    if (empty($dates)) return null;
+                    sort($dates);
+                    $earliest = date('M j', $dates[0]);
+                    $latest = date('M j', end($dates));
+                    return $earliest === $latest ? $earliest : $earliest . '–' . $latest;
+                }
             @endphp
 
             @foreach($categoryMeta as $key => $meta)
@@ -196,8 +218,9 @@
                     <div class="category {{ $meta['class'] }}">
                         <div class="category-title">{{ $meta['label'] }}</div>
                         <ul>
-                            @foreach($report->ai_summary[$key] as $item)
-                                <li>{{ $item }}</li>
+                            @foreach($report->ai_summary[$key] as $idx => $item)
+                                @php $itemDate = getItemDate($key, $idx, $commitRefs, $rawCommits); @endphp
+                                <li>@if($itemDate)<span style="color: #9ca3af; font-size: 9px;">{{ $itemDate }}</span> @endif{{ $item }}</li>
                             @endforeach
                         </ul>
                     </div>

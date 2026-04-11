@@ -164,6 +164,7 @@
                                                         <div>
                                                             <div class="flex items-start gap-2">
                                                                 <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" :class="cat.textClass"></span>
+                                                                <span x-show="getCommitDate(cat.key, idx)" class="flex-shrink-0 text-[11px] text-gray-400 font-medium whitespace-nowrap mt-0.5" x-text="getCommitDate(cat.key, idx)"></span>
                                                                 <span class="flex-1" x-text="item"></span>
                                                                 @if(!in_array($report->status, ['sent', 'archived']))
                                                                     <button @click="openItemFeedback(cat.key, idx, item)"
@@ -272,6 +273,20 @@
                                         const refs = this.summary.commit_refs[category];
                                         if (!refs || !refs[index]) return [];
                                         return refs[index];
+                                    },
+
+                                    getCommitDate(category, index) {
+                                        const refs = this.getCommitRefs(category, index);
+                                        if (refs.length === 0) return null;
+                                        const dates = refs.map(sha => {
+                                            const commit = this.rawCommits.find(c => c.sha && c.sha.startsWith(sha));
+                                            return commit && commit.date ? new Date(commit.date) : null;
+                                        }).filter(Boolean).sort((a, b) => a - b);
+                                        if (dates.length === 0) return null;
+                                        const opts = { month: 'short', day: 'numeric' };
+                                        const earliest = dates[0].toLocaleDateString('en-US', opts);
+                                        const latest = dates[dates.length - 1].toLocaleDateString('en-US', opts);
+                                        return earliest === latest ? earliest : earliest + '–' + latest;
                                     },
 
                                     getCommitUrl(sha) {
@@ -552,6 +567,7 @@
                                                         <div>
                                                             <div class="flex items-start gap-2">
                                                                 <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" :class="cat.textClass"></span>
+                                                                <span x-show="getCommitDate(cat.key, idx)" class="flex-shrink-0 text-[11px] text-gray-400 font-medium whitespace-nowrap mt-0.5" x-text="getCommitDate(cat.key, idx)"></span>
                                                                 <span class="flex-1" x-text="item"></span>
                                                                 @if(!in_array($report->status, ['sent', 'archived']))
                                                                     <button @click="openItemFeedback(cat.key, idx, item)"
@@ -599,6 +615,7 @@
                             function serverSummaryEditor() {
                                 return {
                                     summary: @json($report->server_summary),
+                                    rawServerActivity: @json($report->raw_server_activity ?? []),
                                     editing: false,
                                     dirty: false,
                                     saving: false,
@@ -618,6 +635,9 @@
                                         { key: 'security', label: 'Security & Certificates', borderClass: 'border-purple-400 bg-purple-50', textClass: 'text-purple-800' },
                                         { key: 'infrastructure', label: 'Server Maintenance', borderClass: 'border-gray-400 bg-gray-50', textClass: 'text-gray-800' },
                                     ],
+
+                                    getCommitRefs() { return []; },
+                                    getCommitDate() { return null; },
 
                                     addItem(category) {
                                         if (!this.summary[category]) this.summary[category] = [];
