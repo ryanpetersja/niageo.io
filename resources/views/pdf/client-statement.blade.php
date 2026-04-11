@@ -60,8 +60,18 @@
     <div class="header">
         <div class="header-flex">
             <div class="header-left">
-                @if($branding->logo_path && file_exists(storage_path('app/public/' . $branding->logo_path)))
-                    <img src="{{ storage_path('app/public/' . $branding->logo_path) }}" class="logo" alt="Logo">
+                @if($branding->logo_path)
+                    @php
+                        $logoFullPath = storage_path('app/public/' . $branding->logo_path);
+                        $logoBase64 = null;
+                        if (file_exists($logoFullPath)) {
+                            $logoMime = mime_content_type($logoFullPath);
+                            $logoBase64 = 'data:' . $logoMime . ';base64,' . base64_encode(file_get_contents($logoFullPath));
+                        }
+                    @endphp
+                    @if($logoBase64)
+                        <img src="{{ $logoBase64 }}" class="logo" alt="Logo">
+                    @endif
                 @endif
                 <div class="company-name">{{ $branding->company_name }}</div>
                 @if($branding->address)<div class="company-detail">{!! nl2br(e($branding->address)) !!}</div>@endif
