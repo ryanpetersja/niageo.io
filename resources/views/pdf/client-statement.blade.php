@@ -5,7 +5,7 @@
     <title>Account Statement - {{ $client->company_name }}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 12px; color: #333; line-height: 1.5; }
+        body { font-family: 'DejaVu Sans', sans-serif; font-size: 11px; color: #1f2937; line-height: 1.6; }
 
         .header { padding: 30px 40px; border-bottom: 3px solid #4f46e5; }
         .header-flex { display: table; width: 100%; }
@@ -15,7 +15,7 @@
         .company-detail { font-size: 10px; color: #6b7280; }
         .logo { max-height: 60px; max-width: 200px; margin-bottom: 8px; }
 
-        .statement-title { font-size: 28px; font-weight: bold; color: #4f46e5; }
+        .statement-title { font-size: 22px; font-weight: bold; color: #4f46e5; letter-spacing: 1px; }
 
         .content { padding: 30px 40px; }
 
@@ -73,7 +73,9 @@
                         <img src="{{ $logoBase64 }}" class="logo" alt="Logo">
                     @endif
                 @endif
-                <div class="company-name">{{ $branding->company_name }}</div>
+                @if(empty($logoBase64))
+                    <div class="company-name">{{ $branding->company_name }}</div>
+                @endif
                 @if($branding->address)<div class="company-detail">{!! nl2br(e($branding->address)) !!}</div>@endif
                 @if($branding->phone)<div class="company-detail">{{ $branding->phone }}</div>@endif
                 @if($branding->email)<div class="company-detail">{{ $branding->email }}</div>@endif

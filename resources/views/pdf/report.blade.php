@@ -5,44 +5,44 @@
     <title>{{ $report->report_number }}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 12px; color: #333; line-height: 1.5; }
+        body { font-family: 'DejaVu Sans', sans-serif; font-size: 11px; color: #1f2937; line-height: 1.6; }
 
         .header { padding: 30px 40px; border-bottom: 3px solid #4f46e5; }
         .header-flex { display: table; width: 100%; }
         .header-left { display: table-cell; vertical-align: top; width: 50%; }
         .header-right { display: table-cell; vertical-align: top; width: 50%; text-align: right; }
-        .company-name { font-size: 22px; font-weight: bold; color: #1f2937; margin-bottom: 4px; }
-        .company-detail { font-size: 10px; color: #6b7280; }
+        .company-name { font-size: 20px; font-weight: bold; color: #1f2937; margin-bottom: 4px; }
+        .company-detail { font-size: 9px; color: #6b7280; line-height: 1.5; }
         .logo { max-height: 60px; max-width: 200px; margin-bottom: 8px; }
 
-        .report-title { font-size: 28px; font-weight: bold; color: #4f46e5; }
-        .report-number { font-size: 14px; color: #6b7280; margin-top: 2px; }
+        .report-title { font-size: 22px; font-weight: bold; color: #4f46e5; letter-spacing: 1px; }
+        .report-number { font-size: 12px; color: #6b7280; margin-top: 4px; }
 
-        .content { padding: 30px 40px 60px 40px; }
+        .content { padding: 28px 40px 60px 40px; }
 
-        .meta-table { display: table; width: 100%; margin-bottom: 25px; }
+        .meta-table { display: table; width: 100%; margin-bottom: 24px; }
         .meta-left { display: table-cell; vertical-align: top; width: 50%; }
         .meta-right { display: table-cell; vertical-align: top; width: 50%; }
-        .meta-label { font-size: 10px; text-transform: uppercase; color: #9ca3af; font-weight: 600; letter-spacing: 0.5px; }
-        .meta-value { font-size: 13px; color: #1f2937; margin-bottom: 12px; }
-        .client-name { font-size: 15px; font-weight: 600; color: #1f2937; }
+        .meta-label { font-size: 9px; text-transform: uppercase; color: #9ca3af; font-weight: bold; letter-spacing: 0.5px; }
+        .meta-value { font-size: 12px; color: #1f2937; margin-bottom: 12px; }
+        .client-name { font-size: 14px; font-weight: bold; color: #1f2937; }
 
-        .report-heading { font-size: 13px; font-weight: 600; color: #1f2937; margin-bottom: 10px; margin-top: 20px; page-break-after: avoid; }
+        .report-heading { font-size: 13px; font-weight: bold; color: #1f2937; margin-bottom: 10px; margin-top: 22px; page-break-after: avoid; }
 
-        .stats-bar { display: table; width: 100%; margin-bottom: 25px; border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden; page-break-inside: avoid; }
+        .stats-bar { display: table; width: 100%; margin-bottom: 24px; border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden; page-break-inside: avoid; }
         .stat-item { display: table-cell; text-align: center; padding: 12px 8px; border-right: 1px solid #e5e7eb; background: #f9fafb; }
         .stat-item:last-child { border-right: none; }
-        .stat-number { font-size: 20px; font-weight: 700; color: #4f46e5; }
-        .stat-label { font-size: 9px; text-transform: uppercase; color: #9ca3af; font-weight: 600; margin-top: 2px; }
+        .stat-number { font-size: 18px; font-weight: bold; color: #4f46e5; }
+        .stat-label { font-size: 8px; text-transform: uppercase; color: #9ca3af; font-weight: bold; margin-top: 2px; letter-spacing: 0.3px; }
 
-        .category { margin-bottom: 16px; padding: 12px 14px; border-radius: 4px; page-break-inside: avoid; }
+        .category { margin-bottom: 14px; padding: 10px 14px; border-radius: 4px; page-break-inside: avoid; }
         .category-features { border-left: 4px solid #22c55e; background: #f0fdf4; }
         .category-bugs { border-left: 4px solid #ef4444; background: #fef2f2; }
         .category-improvements { border-left: 4px solid #3b82f6; background: #eff6ff; }
         .category-security { border-left: 4px solid #a855f7; background: #faf5ff; }
         .category-infrastructure { border-left: 4px solid #6b7280; background: #f9fafb; }
 
-        .category-title { font-size: 12px; font-weight: 700; margin-bottom: 6px; }
+        .category-title { font-size: 11px; font-weight: bold; margin-bottom: 5px; }
         .category-features .category-title { color: #15803d; }
         .category-bugs .category-title { color: #b91c1c; }
         .category-improvements .category-title { color: #1d4ed8; }
@@ -50,16 +50,16 @@
         .category-infrastructure .category-title { color: #374151; }
 
         .category ul { margin: 0; padding-left: 16px; }
-        .category li { font-size: 11px; color: #374151; margin-bottom: 3px; }
+        .category li { font-size: 10px; color: #374151; margin-bottom: 3px; line-height: 1.5; }
 
         .notes { margin-top: 20px; padding: 12px; background: #f9fafb; border-radius: 6px; page-break-inside: avoid; }
-        .notes-label { font-size: 10px; text-transform: uppercase; color: #9ca3af; font-weight: 600; margin-bottom: 4px; }
-        .notes-text { font-size: 11px; color: #4b5563; }
+        .notes-label { font-size: 9px; text-transform: uppercase; color: #9ca3af; font-weight: bold; margin-bottom: 4px; }
+        .notes-text { font-size: 10px; color: #4b5563; }
 
         .invoice-ref { margin-top: 15px; padding: 10px 14px; background: #eef2ff; border-radius: 6px; border: 1px solid #c7d2fe; page-break-inside: avoid; }
-        .invoice-ref-text { font-size: 11px; color: #4338ca; }
+        .invoice-ref-text { font-size: 10px; color: #4338ca; }
 
-        .footer { position: fixed; bottom: 0; left: 0; right: 0; padding: 15px 40px; border-top: 1px solid #e5e7eb; text-align: center; font-size: 9px; color: #9ca3af; }
+        .footer { position: fixed; bottom: 0; left: 0; right: 0; padding: 15px 40px; border-top: 1px solid #e5e7eb; text-align: center; font-size: 8px; color: #9ca3af; }
     </style>
 </head>
 <body>
@@ -79,7 +79,9 @@
                         <img src="{{ $logoBase64 }}" class="logo" alt="Logo">
                     @endif
                 @endif
-                <div class="company-name">{{ $branding->company_name }}</div>
+                @if(empty($logoBase64))
+                    <div class="company-name">{{ $branding->company_name }}</div>
+                @endif
                 @if($branding->address)<div class="company-detail">{!! nl2br(e($branding->address)) !!}</div>@endif
                 @if($branding->phone)<div class="company-detail">{{ $branding->phone }}</div>@endif
                 @if($branding->email)<div class="company-detail">{{ $branding->email }}</div>@endif

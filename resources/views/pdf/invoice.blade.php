@@ -5,57 +5,57 @@
     <title>{{ $invoice->invoice_number }}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 12px; color: #333; line-height: 1.5; }
+        body { font-family: 'DejaVu Sans', sans-serif; font-size: 11px; color: #1f2937; line-height: 1.6; }
 
         .header { padding: 30px 40px; border-bottom: 3px solid #4f46e5; }
         .header-flex { display: table; width: 100%; }
         .header-left { display: table-cell; vertical-align: top; width: 50%; }
         .header-right { display: table-cell; vertical-align: top; width: 50%; text-align: right; }
-        .company-name { font-size: 22px; font-weight: bold; color: #1f2937; margin-bottom: 4px; }
-        .company-detail { font-size: 10px; color: #6b7280; }
+        .company-name { font-size: 20px; font-weight: bold; color: #1f2937; margin-bottom: 4px; }
+        .company-detail { font-size: 9px; color: #6b7280; line-height: 1.5; }
         .logo { max-height: 60px; max-width: 200px; margin-bottom: 8px; }
 
-        .invoice-title { font-size: 28px; font-weight: bold; color: #4f46e5; }
-        .invoice-number { font-size: 14px; color: #6b7280; margin-top: 2px; }
-        .status-badge { display: inline-block; padding: 3px 12px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-top: 6px; }
+        .invoice-title { font-size: 22px; font-weight: bold; color: #4f46e5; letter-spacing: 1px; }
+        .invoice-number { font-size: 12px; color: #6b7280; margin-top: 4px; }
+        .status-badge { display: inline-block; padding: 3px 12px; border-radius: 12px; font-size: 10px; font-weight: bold; text-transform: uppercase; margin-top: 6px; }
         .status-draft { background: #f3f4f6; color: #374151; }
         .status-sent { background: #dbeafe; color: #1e40af; }
         .status-paid { background: #d1fae5; color: #065f46; }
         .status-overdue { background: #fee2e2; color: #991b1b; }
         .status-cancelled { background: #fef3c7; color: #92400e; }
 
-        .content { padding: 30px 40px; }
+        .content { padding: 28px 40px; }
 
-        .meta-table { display: table; width: 100%; margin-bottom: 30px; }
+        .meta-table { display: table; width: 100%; margin-bottom: 28px; }
         .meta-left { display: table-cell; vertical-align: top; width: 50%; }
         .meta-right { display: table-cell; vertical-align: top; width: 50%; }
-        .meta-label { font-size: 10px; text-transform: uppercase; color: #9ca3af; font-weight: 600; letter-spacing: 0.5px; }
-        .meta-value { font-size: 13px; color: #1f2937; margin-bottom: 12px; }
+        .meta-label { font-size: 9px; text-transform: uppercase; color: #9ca3af; font-weight: bold; letter-spacing: 0.5px; }
+        .meta-value { font-size: 12px; color: #1f2937; margin-bottom: 12px; }
 
-        .bill-to-name { font-size: 15px; font-weight: 600; color: #1f2937; }
+        .bill-to-name { font-size: 14px; font-weight: bold; color: #1f2937; }
 
         table.line-items { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        table.line-items thead th { background: #f9fafb; padding: 10px 12px; text-align: left; font-size: 10px; text-transform: uppercase; color: #6b7280; font-weight: 600; border-bottom: 2px solid #e5e7eb; }
+        table.line-items thead th { background: #f9fafb; padding: 10px 12px; text-align: left; font-size: 9px; text-transform: uppercase; color: #6b7280; font-weight: bold; border-bottom: 2px solid #e5e7eb; }
         table.line-items thead th.text-right { text-align: right; }
-        table.line-items tbody td { padding: 10px 12px; border-bottom: 1px solid #f3f4f6; font-size: 12px; }
+        table.line-items tbody td { padding: 10px 12px; border-bottom: 1px solid #f3f4f6; font-size: 11px; }
         table.line-items tbody td.text-right { text-align: right; }
 
         .totals { width: 280px; margin-left: auto; }
         .total-row { display: table; width: 100%; padding: 5px 0; }
-        .total-label { display: table-cell; text-align: right; padding-right: 20px; color: #6b7280; font-size: 12px; }
-        .total-value { display: table-cell; text-align: right; font-size: 12px; width: 100px; }
+        .total-label { display: table-cell; text-align: right; padding-right: 20px; color: #6b7280; font-size: 11px; }
+        .total-value { display: table-cell; text-align: right; font-size: 11px; width: 100px; }
         .total-row.grand { border-top: 2px solid #e5e7eb; padding-top: 8px; margin-top: 4px; }
-        .total-row.grand .total-label { font-weight: 700; color: #1f2937; font-size: 14px; }
-        .total-row.grand .total-value { font-weight: 700; color: #1f2937; font-size: 14px; }
-        .total-row.balance .total-label { font-weight: 700; color: #dc2626; font-size: 13px; }
-        .total-row.balance .total-value { font-weight: 700; color: #dc2626; font-size: 13px; }
+        .total-row.grand .total-label { font-weight: bold; color: #1f2937; font-size: 13px; }
+        .total-row.grand .total-value { font-weight: bold; color: #1f2937; font-size: 13px; }
+        .total-row.balance .total-label { font-weight: bold; color: #dc2626; font-size: 12px; }
+        .total-row.balance .total-value { font-weight: bold; color: #dc2626; font-size: 12px; }
         .total-row.paid .total-value { color: #059669; }
 
         .notes { margin-top: 30px; padding: 15px; background: #f9fafb; border-radius: 6px; }
-        .notes-label { font-size: 10px; text-transform: uppercase; color: #9ca3af; font-weight: 600; margin-bottom: 4px; }
-        .notes-text { font-size: 11px; color: #4b5563; }
+        .notes-label { font-size: 9px; text-transform: uppercase; color: #9ca3af; font-weight: bold; margin-bottom: 4px; }
+        .notes-text { font-size: 10px; color: #4b5563; }
 
-        .footer { position: fixed; bottom: 0; left: 0; right: 0; padding: 15px 40px; border-top: 1px solid #e5e7eb; text-align: center; font-size: 9px; color: #9ca3af; }
+        .footer { position: fixed; bottom: 0; left: 0; right: 0; padding: 15px 40px; border-top: 1px solid #e5e7eb; text-align: center; font-size: 8px; color: #9ca3af; }
     </style>
 </head>
 <body>
@@ -75,7 +75,9 @@
                         <img src="{{ $logoBase64 }}" class="logo" alt="Logo">
                     @endif
                 @endif
-                <div class="company-name">{{ $branding->company_name }}</div>
+                @if(empty($logoBase64))
+                    <div class="company-name">{{ $branding->company_name }}</div>
+                @endif
                 @if($branding->address)<div class="company-detail">{!! nl2br(e($branding->address)) !!}</div>@endif
                 @if($branding->phone)<div class="company-detail">{{ $branding->phone }}</div>@endif
                 @if($branding->email)<div class="company-detail">{{ $branding->email }}</div>@endif
