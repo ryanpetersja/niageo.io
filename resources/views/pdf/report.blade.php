@@ -192,8 +192,14 @@
 
                 $rawCommits = $report->raw_commits ?? [];
                 $commitRefs = $report->ai_summary['commit_refs'] ?? [];
+                $itemDates = $report->ai_summary['item_dates'] ?? [];
 
-                function getItemDate($category, $index, $commitRefs, $rawCommits) {
+                function getItemDate($category, $index, $commitRefs, $rawCommits, $itemDates) {
+                    // Manual date takes priority
+                    $manual = $itemDates[$category][$index] ?? null;
+                    if ($manual) return $manual;
+
+                    // Fall back to commit ref dates
                     $refs = $commitRefs[$category][$index] ?? [];
                     if (empty($refs)) return null;
                     $dates = [];
@@ -219,7 +225,7 @@
                         <div class="category-title">{{ $meta['label'] }}</div>
                         <ul>
                             @foreach($report->ai_summary[$key] as $idx => $item)
-                                @php $itemDate = getItemDate($key, $idx, $commitRefs, $rawCommits); @endphp
+                                @php $itemDate = getItemDate($key, $idx, $commitRefs, $rawCommits, $itemDates); @endphp
                                 <li>@if($itemDate)<span style="color: #9ca3af; font-size: 9px;">{{ $itemDate }}</span> @endif{{ $item }}</li>
                             @endforeach
                         </ul>
@@ -240,6 +246,7 @@
                     'security' => ['label' => 'Security & Certificates', 'class' => 'category-security'],
                     'infrastructure' => ['label' => 'Server Maintenance', 'class' => 'category-infrastructure'],
                 ];
+                $serverItemDates = $report->server_summary['item_dates'] ?? [];
             @endphp
 
             @foreach($serverCategoryMeta as $key => $meta)
@@ -247,8 +254,9 @@
                     <div class="category {{ $meta['class'] }}">
                         <div class="category-title">{{ $meta['label'] }}</div>
                         <ul>
-                            @foreach($report->server_summary[$key] as $item)
-                                <li>{{ $item }}</li>
+                            @foreach($report->server_summary[$key] as $idx => $item)
+                                @php $srvDate = $serverItemDates[$key][$idx] ?? null; @endphp
+                                <li>@if($srvDate)<span style="color: #9ca3af; font-size: 9px;">{{ $srvDate }}</span> @endif{{ $item }}</li>
                             @endforeach
                         </ul>
                     </div>

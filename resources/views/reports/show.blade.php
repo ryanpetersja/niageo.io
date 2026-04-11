@@ -164,7 +164,7 @@
                                                         <div>
                                                             <div class="flex items-start gap-2">
                                                                 <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" :class="cat.textClass"></span>
-                                                                <span x-show="getCommitDate(cat.key, idx)" class="flex-shrink-0 text-[11px] text-gray-400 font-medium whitespace-nowrap mt-0.5" x-text="getCommitDate(cat.key, idx)"></span>
+                                                                <span x-show="getItemDate(cat.key, idx)" class="flex-shrink-0 text-[11px] text-gray-400 font-medium whitespace-nowrap mt-0.5" x-text="getItemDate(cat.key, idx)"></span>
                                                                 <span class="flex-1" x-text="item"></span>
                                                                 @if(!in_array($report->status, ['sent', 'archived']))
                                                                     <button @click="openItemFeedback(cat.key, idx, item)"
@@ -211,6 +211,8 @@
                                                     <template x-if="editing">
                                                         <span class="flex items-start gap-1.5 w-full">
                                                             <span class="mt-2.5 w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" :class="cat.textClass"></span>
+                                                            <input type="text" :value="getItemDateInput(cat.key, idx)" @input="setItemDate(cat.key, idx, $event.target.value)" placeholder="Date"
+                                                                class="w-20 flex-shrink-0 text-xs rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-1 px-1.5 text-gray-500 placeholder-gray-300">
                                                             <textarea x-model="summary[cat.key][idx]" @input="dirty = true" rows="2"
                                                                 class="flex-1 text-sm rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-1 px-2"></textarea>
                                                             <button @click="removeItem(cat.key, idx)" class="text-red-400 hover:text-red-600 mt-1 flex-shrink-0" title="Remove">&times;</button>
@@ -257,6 +259,9 @@
                                         if (this.summary.commit_refs && this.summary.commit_refs[category]) {
                                             this.summary.commit_refs[category].push([]);
                                         }
+                                        if (this.summary.item_dates && this.summary.item_dates[category]) {
+                                            this.summary.item_dates[category].push(null);
+                                        }
                                         this.dirty = true;
                                     },
 
@@ -264,6 +269,9 @@
                                         this.summary[category].splice(index, 1);
                                         if (this.summary.commit_refs && this.summary.commit_refs[category]) {
                                             this.summary.commit_refs[category].splice(index, 1);
+                                        }
+                                        if (this.summary.item_dates && this.summary.item_dates[category]) {
+                                            this.summary.item_dates[category].splice(index, 1);
                                         }
                                         this.dirty = true;
                                     },
@@ -273,6 +281,12 @@
                                         const refs = this.summary.commit_refs[category];
                                         if (!refs || !refs[index]) return [];
                                         return refs[index];
+                                    },
+
+                                    getItemDate(category, index) {
+                                        const manual = this.summary.item_dates && this.summary.item_dates[category] && this.summary.item_dates[category][index];
+                                        if (manual) return manual;
+                                        return this.getCommitDate(category, index);
                                     },
 
                                     getCommitDate(category, index) {
@@ -287,6 +301,22 @@
                                         const earliest = dates[0].toLocaleDateString('en-US', opts);
                                         const latest = dates[dates.length - 1].toLocaleDateString('en-US', opts);
                                         return earliest === latest ? earliest : earliest + '–' + latest;
+                                    },
+
+                                    getItemDateInput(category, index) {
+                                        if (!this.summary.item_dates) return '';
+                                        return this.summary.item_dates[category]?.[index] || '';
+                                    },
+
+                                    setItemDate(category, index, value) {
+                                        if (!this.summary.item_dates) this.summary.item_dates = {};
+                                        if (!this.summary.item_dates[category]) this.summary.item_dates[category] = [];
+                                        // Pad array to reach the index
+                                        while (this.summary.item_dates[category].length <= index) {
+                                            this.summary.item_dates[category].push(null);
+                                        }
+                                        this.summary.item_dates[category][index] = value || null;
+                                        this.dirty = true;
                                     },
 
                                     getCommitUrl(sha) {
@@ -428,21 +458,26 @@
 
                                         const cleaned = {};
                                         const cleanedRefs = {};
+                                        const cleanedDates = {};
                                         for (const key of ['features', 'bugs', 'improvements', 'security', 'infrastructure']) {
                                             const items = this.summary[key] || [];
                                             const refs = (this.summary.commit_refs && this.summary.commit_refs[key]) || [];
+                                            const dates = (this.summary.item_dates && this.summary.item_dates[key]) || [];
                                             cleaned[key] = [];
                                             cleanedRefs[key] = [];
+                                            cleanedDates[key] = [];
                                             items.forEach((s, i) => {
                                                 if (s.trim() !== '') {
                                                     cleaned[key].push(s);
                                                     cleanedRefs[key].push(refs[i] || []);
+                                                    cleanedDates[key].push(dates[i] || null);
                                                 }
                                             });
                                         }
                                         if (this.summary.commit_refs) {
                                             cleaned.commit_refs = cleanedRefs;
                                         }
+                                        cleaned.item_dates = cleanedDates;
 
                                         try {
                                             const resp = await fetch(`/reports/${this.reportId}/summary`, {
@@ -567,7 +602,7 @@
                                                         <div>
                                                             <div class="flex items-start gap-2">
                                                                 <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" :class="cat.textClass"></span>
-                                                                <span x-show="getCommitDate(cat.key, idx)" class="flex-shrink-0 text-[11px] text-gray-400 font-medium whitespace-nowrap mt-0.5" x-text="getCommitDate(cat.key, idx)"></span>
+                                                                <span x-show="getItemDate(cat.key, idx)" class="flex-shrink-0 text-[11px] text-gray-400 font-medium whitespace-nowrap mt-0.5" x-text="getItemDate(cat.key, idx)"></span>
                                                                 <span class="flex-1" x-text="item"></span>
                                                                 @if(!in_array($report->status, ['sent', 'archived']))
                                                                     <button @click="openItemFeedback(cat.key, idx, item)"
@@ -597,6 +632,8 @@
                                                     <template x-if="editing">
                                                         <span class="flex items-start gap-1.5 w-full">
                                                             <span class="mt-2.5 w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" :class="cat.textClass"></span>
+                                                            <input type="text" :value="getItemDateInput(cat.key, idx)" @input="setItemDate(cat.key, idx, $event.target.value)" placeholder="Date"
+                                                                class="w-20 flex-shrink-0 text-xs rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-1 px-1.5 text-gray-500 placeholder-gray-300">
                                                             <textarea x-model="summary[cat.key][idx]" @input="dirty = true" rows="2"
                                                                 class="flex-1 text-sm rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-1 px-2"></textarea>
                                                             <button @click="removeItem(cat.key, idx)" class="text-red-400 hover:text-red-600 mt-1 flex-shrink-0" title="Remove">&times;</button>
@@ -639,14 +676,39 @@
                                     getCommitRefs() { return []; },
                                     getCommitDate() { return null; },
 
+                                    getItemDate(category, index) {
+                                        return (this.summary.item_dates && this.summary.item_dates[category] && this.summary.item_dates[category][index]) || null;
+                                    },
+
+                                    getItemDateInput(category, index) {
+                                        if (!this.summary.item_dates) return '';
+                                        return this.summary.item_dates[category]?.[index] || '';
+                                    },
+
+                                    setItemDate(category, index, value) {
+                                        if (!this.summary.item_dates) this.summary.item_dates = {};
+                                        if (!this.summary.item_dates[category]) this.summary.item_dates[category] = [];
+                                        while (this.summary.item_dates[category].length <= index) {
+                                            this.summary.item_dates[category].push(null);
+                                        }
+                                        this.summary.item_dates[category][index] = value || null;
+                                        this.dirty = true;
+                                    },
+
                                     addItem(category) {
                                         if (!this.summary[category]) this.summary[category] = [];
                                         this.summary[category].push('');
+                                        if (this.summary.item_dates && this.summary.item_dates[category]) {
+                                            this.summary.item_dates[category].push(null);
+                                        }
                                         this.dirty = true;
                                     },
 
                                     removeItem(category, index) {
                                         this.summary[category].splice(index, 1);
+                                        if (this.summary.item_dates && this.summary.item_dates[category]) {
+                                            this.summary.item_dates[category].splice(index, 1);
+                                        }
                                         this.dirty = true;
                                     },
 
@@ -776,9 +838,20 @@
                                         this.saveError = false;
 
                                         const cleaned = {};
+                                        const cleanedDates = {};
                                         for (const key of ['features', 'bugs', 'improvements', 'security', 'infrastructure']) {
-                                            cleaned[key] = (this.summary[key] || []).filter(s => s.trim() !== '');
+                                            const items = this.summary[key] || [];
+                                            const dates = (this.summary.item_dates && this.summary.item_dates[key]) || [];
+                                            cleaned[key] = [];
+                                            cleanedDates[key] = [];
+                                            items.forEach((s, i) => {
+                                                if (s.trim() !== '') {
+                                                    cleaned[key].push(s);
+                                                    cleanedDates[key].push(dates[i] || null);
+                                                }
+                                            });
                                         }
+                                        cleaned.item_dates = cleanedDates;
 
                                         try {
                                             const resp = await fetch(`/reports/${this.reportId}/server-summary`, {
