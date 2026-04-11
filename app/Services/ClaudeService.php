@@ -100,8 +100,7 @@ PROMPT;
 
         $commitList = collect($commits)->map(function ($c) {
             $msg = strtok($c['message'], "\n");
-            $date = !empty($c['date']) ? date('M j', strtotime($c['date'])) : '';
-            return "- [{$c['sha']}] [{$date}] ({$c['repo']}) {$msg}";
+            return "- [{$c['sha']}] ({$c['repo']}) {$msg}";
         })->implode("\n");
 
         $systemPrompt = <<<PROMPT
@@ -139,15 +138,12 @@ Categories:
 - security: Changes that better protect the business, its data, or its users
 - infrastructure: Behind-the-scenes work that keeps the platform reliable and running smoothly
 
-Format each item as: "Mon D — [Plain-language description] — [clear benefit to the business or users]"
-- Start each item with the date (e.g. "Apr 3") from the [date] tags on the commits
-- When grouping multiple commits, use a date range (e.g. "Apr 3–5") spanning the earliest to latest commit date in the group
-- If all grouped commits share the same date, use just that single date
+Format each item as: "[Plain-language description] — [clear benefit to the business or users]"
 
 Example good items:
-- "Apr 3 — Added the ability to attach files to email broadcasts — clients can now receive important documents directly in their notifications"
-- "Apr 1–3 — Fixed an issue where search filters were not returning correct results — users can now reliably find the information they need"
-- "Mar 28 — Improved how the system handles time zones — all dates and times now display correctly for your region"
+- "Added the ability to attach files to email broadcasts — clients can now receive important documents directly in their notifications"
+- "Fixed an issue where search filters were not returning correct results — users can now reliably find the information they need"
+- "Improved how the system handles time zones — all dates and times now display correctly for your region"
 
 Example bad items (too technical):
 - "Migrated admin email configuration to centralized config system"
@@ -374,15 +370,12 @@ Categories:
 - security: Security patches, certificate updates, firewall changes, access controls
 - infrastructure: Server maintenance, backups, monitoring, service restarts, database maintenance
 
-Format each item as: "Mon D — [Plain-language description] — [clear benefit to the business or users]"
-- Start each item with the date (e.g. "Apr 3") from the [timestamp] tags on the commands
-- When grouping multiple commands, use a date range (e.g. "Apr 3–5") spanning the earliest to latest date in the group
-- If all grouped commands share the same date, use just that single date
+Format each item as: "[Plain-language description] — [clear benefit to the business or users]"
 
 Example good items:
-- "Apr 3 — Deployed the latest application update to the production server — users now have access to the newest features and fixes"
-- "Mar 28 — Renewed the SSL security certificate — ensures the website remains secure and trusted by browsers"
-- "Apr 1–5 — Performed database backups and optimization — protects business data and keeps the application running smoothly"
+- "Deployed the latest application update to the production server — users now have access to the newest features and fixes"
+- "Renewed the SSL security certificate — ensures the website remains secure and trusted by browsers"
+- "Performed a database backup and optimization — protects business data and keeps the application running smoothly"
 
 If a category has no relevant items, use an empty array.
 
