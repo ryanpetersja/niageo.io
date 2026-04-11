@@ -45,15 +45,13 @@
                             ">{{ ucfirst($report->status) }}</span>
                         </div>
 
-                        <div class="grid grid-cols-2 md:grid-cols-{{ $report->uptime_score !== null ? '6' : '5' }} gap-4 text-sm">
+                        <div class="grid grid-cols-2 md:grid-cols-{{ $report->uptime_score !== null ? '4' : '3' }} gap-4 text-sm">
                             <div><span class="text-gray-500">Period</span><div class="font-medium">{{ $report->date_from->format('M d') }} — {{ $report->date_to->format('M d, Y') }}</div></div>
                             <div><span class="text-gray-500">Commits</span><div class="font-medium">{{ $report->commit_count }}</div></div>
-                            <div><span class="text-gray-500">Repositories</span><div class="font-medium">{{ $report->repo_count }}</div></div>
-                            <div><span class="text-gray-500">Server Commands</span><div class="font-medium">{{ $report->raw_server_activity ? count($report->raw_server_activity) : 0 }}</div></div>
                             @if($report->uptime_score !== null)
                                 <div><span class="text-gray-500">Uptime</span><div class="font-medium text-green-700">{{ number_format($report->uptime_score, 2) }}%</div></div>
                             @endif
-                            <div><span class="text-gray-500">Summary Items</span><div class="font-medium">{{ $report->summary_item_count }}</div></div>
+                            <div><span class="text-gray-500">Deliverables</span><div class="font-medium">{{ $report->summary_item_count }}</div></div>
                         </div>
                     </div>
 

@@ -145,16 +145,6 @@
                 <div class="stat-label">Commits</div>
             </div>
             <div class="stat-item">
-                <div class="stat-number">{{ $report->repo_count }}</div>
-                <div class="stat-label">Repositories</div>
-            </div>
-            @if($report->server_count > 0)
-                <div class="stat-item">
-                    <div class="stat-number">{{ $report->raw_server_activity ? count($report->raw_server_activity) : 0 }}</div>
-                    <div class="stat-label">Server Actions</div>
-                </div>
-            @endif
-            <div class="stat-item">
                 <div class="stat-number">{{ $report->summary_item_count }}</div>
                 <div class="stat-label">Deliverables</div>
             </div>
