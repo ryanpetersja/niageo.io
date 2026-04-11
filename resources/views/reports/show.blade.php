@@ -211,8 +211,8 @@
                                                     <template x-if="editing">
                                                         <span class="flex items-start gap-1.5 w-full">
                                                             <span class="mt-2.5 w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" :class="cat.textClass"></span>
-                                                            <input type="text" :value="getItemDateInput(cat.key, idx)" @input="setItemDate(cat.key, idx, $event.target.value)" placeholder="Date"
-                                                                class="w-20 flex-shrink-0 text-xs rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-1 px-1.5 text-gray-500 placeholder-gray-300">
+                                                            <input type="date" :value="getItemDateRaw(cat.key, idx)" @input="setItemDateFromPicker(cat.key, idx, $event.target.value)"
+                                                                class="w-[8.5rem] flex-shrink-0 text-xs rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-1 px-1.5 text-gray-500">
                                                             <textarea x-model="summary[cat.key][idx]" @input="dirty = true" rows="2"
                                                                 class="flex-1 text-sm rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-1 px-2"></textarea>
                                                             <button @click="removeItem(cat.key, idx)" class="text-red-400 hover:text-red-600 mt-1 flex-shrink-0" title="Remove">&times;</button>
@@ -285,7 +285,7 @@
 
                                     getItemDate(category, index) {
                                         const manual = this.summary.item_dates && this.summary.item_dates[category] && this.summary.item_dates[category][index];
-                                        if (manual) return manual;
+                                        if (manual) return this.formatDate(manual);
                                         return this.getCommitDate(category, index);
                                     },
 
@@ -303,15 +303,21 @@
                                         return earliest === latest ? earliest : earliest + '–' + latest;
                                     },
 
-                                    getItemDateInput(category, index) {
+                                    formatDate(iso) {
+                                        if (!iso) return null;
+                                        const d = new Date(iso + 'T00:00:00');
+                                        if (isNaN(d)) return iso;
+                                        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                                    },
+
+                                    getItemDateRaw(category, index) {
                                         if (!this.summary.item_dates) return '';
                                         return this.summary.item_dates[category]?.[index] || '';
                                     },
 
-                                    setItemDate(category, index, value) {
+                                    setItemDateFromPicker(category, index, value) {
                                         if (!this.summary.item_dates) this.summary.item_dates = {};
                                         if (!this.summary.item_dates[category]) this.summary.item_dates[category] = [];
-                                        // Pad array to reach the index
                                         while (this.summary.item_dates[category].length <= index) {
                                             this.summary.item_dates[category].push(null);
                                         }
@@ -632,8 +638,8 @@
                                                     <template x-if="editing">
                                                         <span class="flex items-start gap-1.5 w-full">
                                                             <span class="mt-2.5 w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" :class="cat.textClass"></span>
-                                                            <input type="text" :value="getItemDateInput(cat.key, idx)" @input="setItemDate(cat.key, idx, $event.target.value)" placeholder="Date"
-                                                                class="w-20 flex-shrink-0 text-xs rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-1 px-1.5 text-gray-500 placeholder-gray-300">
+                                                            <input type="date" :value="getItemDateRaw(cat.key, idx)" @input="setItemDateFromPicker(cat.key, idx, $event.target.value)"
+                                                                class="w-[8.5rem] flex-shrink-0 text-xs rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-1 px-1.5 text-gray-500">
                                                             <textarea x-model="summary[cat.key][idx]" @input="dirty = true" rows="2"
                                                                 class="flex-1 text-sm rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-1 px-2"></textarea>
                                                             <button @click="removeItem(cat.key, idx)" class="text-red-400 hover:text-red-600 mt-1 flex-shrink-0" title="Remove">&times;</button>
@@ -676,16 +682,24 @@
                                     getCommitRefs() { return []; },
                                     getCommitDate() { return null; },
 
-                                    getItemDate(category, index) {
-                                        return (this.summary.item_dates && this.summary.item_dates[category] && this.summary.item_dates[category][index]) || null;
+                                    formatDate(iso) {
+                                        if (!iso) return null;
+                                        const d = new Date(iso + 'T00:00:00');
+                                        if (isNaN(d)) return iso;
+                                        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                                     },
 
-                                    getItemDateInput(category, index) {
+                                    getItemDate(category, index) {
+                                        const manual = this.summary.item_dates && this.summary.item_dates[category] && this.summary.item_dates[category][index];
+                                        return manual ? this.formatDate(manual) : null;
+                                    },
+
+                                    getItemDateRaw(category, index) {
                                         if (!this.summary.item_dates) return '';
                                         return this.summary.item_dates[category]?.[index] || '';
                                     },
 
-                                    setItemDate(category, index, value) {
+                                    setItemDateFromPicker(category, index, value) {
                                         if (!this.summary.item_dates) this.summary.item_dates = {};
                                         if (!this.summary.item_dates[category]) this.summary.item_dates[category] = [];
                                         while (this.summary.item_dates[category].length <= index) {

@@ -195,9 +195,12 @@
                 $itemDates = $report->ai_summary['item_dates'] ?? [];
 
                 function getItemDate($category, $index, $commitRefs, $rawCommits, $itemDates) {
-                    // Manual date takes priority
+                    // Manual date takes priority (stored as YYYY-MM-DD)
                     $manual = $itemDates[$category][$index] ?? null;
-                    if ($manual) return $manual;
+                    if ($manual) {
+                        $ts = strtotime($manual);
+                        return $ts ? date('M j', $ts) : $manual;
+                    }
 
                     // Fall back to commit ref dates
                     $refs = $commitRefs[$category][$index] ?? [];
@@ -255,7 +258,10 @@
                         <div class="category-title">{{ $meta['label'] }}</div>
                         <ul>
                             @foreach($report->server_summary[$key] as $idx => $item)
-                                @php $srvDate = $serverItemDates[$key][$idx] ?? null; @endphp
+                                @php
+                                    $srvDateRaw = $serverItemDates[$key][$idx] ?? null;
+                                    $srvDate = $srvDateRaw ? (($ts = strtotime($srvDateRaw)) ? date('M j', $ts) : $srvDateRaw) : null;
+                                @endphp
                                 <li>@if($srvDate)<span style="color: #9ca3af; font-size: 9px;">{{ $srvDate }}</span> @endif{{ $item }}</li>
                             @endforeach
                         </ul>
