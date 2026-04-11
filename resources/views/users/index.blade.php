@@ -1,5 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
+        <x-breadcrumbs :items="[['label' => 'Users']]" />
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">Users</h2>
             <a href="{{ route('users.create') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 transition">New User</a>

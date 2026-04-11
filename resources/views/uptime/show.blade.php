@@ -1,5 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
+        <x-breadcrumbs :items="[['label' => 'Monitoring', 'url' => route('uptime.index')], ['label' => $endpoint->name]]" />
         <div class="flex justify-between items-center">
             <div class="flex items-center gap-3">
                 <div class="w-3 h-3 rounded-full bg-{{ $endpoint->status_color }}-500"></div>

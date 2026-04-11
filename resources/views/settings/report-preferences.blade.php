@@ -1,5 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
+        <x-breadcrumbs :items="[['label' => 'Settings'], ['label' => 'Report Preferences']]" />
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">Report AI Preferences</h2>
             <a href="{{ route('settings.branding') }}" class="text-sm text-indigo-600 hover:text-indigo-800">Back to Settings</a>

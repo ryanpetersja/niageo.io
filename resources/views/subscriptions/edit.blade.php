@@ -1,5 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
+        <x-breadcrumbs :items="[['label' => 'Subscriptions', 'url' => route('subscriptions.index')], ['label' => $bill->service_name, 'url' => route('subscriptions.index')], ['label' => 'Edit']]" />
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">Edit Subscription — {{ $bill->service_name }}</h2>
     </x-slot>
 

@@ -1,5 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
+        <x-breadcrumbs :items="[['label' => 'Clients', 'url' => route('clients.index')], ['label' => $client->company_name]]" />
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ $client->company_name }}</h2>
             <div class="flex gap-2 items-center">

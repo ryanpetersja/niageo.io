@@ -1,5 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
+        <x-breadcrumbs :items="[['label' => 'Reports', 'url' => route('reports.index')], ['label' => $report->report_number]]" />
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">Report {{ $report->report_number }}</h2>
             <div class="flex gap-2">

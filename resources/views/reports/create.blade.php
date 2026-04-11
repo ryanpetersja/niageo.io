@@ -1,5 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
+        <x-breadcrumbs :items="[['label' => 'Reports', 'url' => route('reports.index')], ['label' => 'New Report']]" />
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">Create Report</h2>
     </x-slot>
 

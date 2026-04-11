@@ -1,5 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
+        <x-breadcrumbs :items="[['label' => 'Invoices', 'url' => route('invoices.index')], ['label' => $invoice->invoice_number, 'url' => route('invoices.show', $invoice)], ['label' => 'Edit']]" />
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">Edit Invoice: {{ $invoice->invoice_number }}</h2>
     </x-slot>
 

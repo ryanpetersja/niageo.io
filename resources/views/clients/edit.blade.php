@@ -1,5 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
+        <x-breadcrumbs :items="[['label' => 'Clients', 'url' => route('clients.index')], ['label' => $client->company_name, 'url' => route('clients.show', $client)], ['label' => 'Edit']]" />
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">Edit Client: {{ $client->company_name }}</h2>
     </x-slot>
 
