@@ -54,6 +54,14 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                         <div>
+                            <x-input-label for="uptime_score" value="Uptime Score % (optional)" />
+                            <x-text-input id="uptime_score" name="uptime_score" type="number" step="0.01" min="0" max="100" class="mt-1 block w-full" :value="old('uptime_score', $report->uptime_score)" placeholder="e.g., 99.95" />
+                            <x-input-error :messages="$errors->get('uptime_score')" class="mt-2" />
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
                             <x-input-label for="notes" value="Notes (visible in report)" />
                             <textarea id="notes" name="notes" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">{{ old('notes', $report->notes) }}</textarea>
                         </div>

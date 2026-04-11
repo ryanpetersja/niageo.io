@@ -46,6 +46,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/api/github/repos', [ClientRepositoryController::class, 'githubRepos'])->name('api.github.repos');
     Route::get('/api/github/branches', [ClientRepositoryController::class, 'githubBranches'])->name('api.github.branches');
 
+    // Client Services
+    Route::post('/clients/{client}/services', [ClientController::class, 'storeService'])->name('services.store');
+    Route::put('/clients/{client}/services/{service}', [ClientController::class, 'updateService'])->name('services.update');
+    Route::delete('/clients/{client}/services/{service}', [ClientController::class, 'destroyService'])->name('services.destroy');
+
     // Client Servers (SSH)
     Route::post('/clients/{client}/servers', [ClientServerController::class, 'store'])->name('servers.store');
     Route::delete('/clients/{client}/servers/{server}', [ClientServerController::class, 'destroy'])->name('servers.destroy');
@@ -67,6 +72,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/reports/{report}/feedback/preview', [ReportController::class, 'previewFeedback'])->name('reports.feedback.preview');
     Route::post('/reports/{report}/feedback/accept', [ReportController::class, 'acceptFeedback'])->name('reports.feedback.accept');
     Route::post('/reports/{report}/feedback/reject', [ReportController::class, 'rejectFeedback'])->name('reports.feedback.reject');
+    Route::put('/reports/{report}/uptime-score', [ReportController::class, 'updateUptimeScore'])->name('reports.update-uptime-score');
     Route::get('/api/clients/{client}/invoices', [ReportController::class, 'clientInvoices'])->name('api.client.invoices');
 
     // Uptime Monitoring

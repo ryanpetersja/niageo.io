@@ -27,6 +27,8 @@ class Report extends Model
         'repo_count',
         'server_count',
         'invoice_id',
+        'uptime_score',
+        'service_snapshot',
         'notes',
         'internal_notes',
         'generated_at',
@@ -46,6 +48,8 @@ class Report extends Model
         'commit_count' => 'integer',
         'repo_count' => 'integer',
         'server_count' => 'integer',
+        'uptime_score' => 'decimal:2',
+        'service_snapshot' => 'array',
     ];
 
     public function client(): BelongsTo

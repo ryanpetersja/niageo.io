@@ -109,6 +109,7 @@ class ReportService
                 'server_count' => $servers,
                 'status' => 'generated',
                 'generated_at' => now(),
+                'service_snapshot' => $this->snapshotServices($report),
             ];
 
             $report->update($updateData);
@@ -288,6 +289,42 @@ class ReportService
             'item_text' => $data['item_text'] ?? null,
             'resolution' => 'rejected',
         ]);
+    }
+
+    private function snapshotServices(Report $report): ?array
+    {
+        $services = $report->client->services()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
+
+        if ($services->isEmpty()) {
+            return null;
+        }
+
+        $days = $report->date_from->diffInDays($report->date_to);
+
+        return $services->map(fn ($s) => [
+            'display_name' => $s->display_name,
+            'service_type' => $s->service_type,
+            'config' => $s->config,
+            'days' => $days,
+            'metric_text' => $this->calculateMetricText($s, $days),
+        ])->toArray();
+    }
+
+    private function calculateMetricText($service, int $days): string
+    {
+        if ($service->service_type === 'backups') {
+            $frequency = $service->config['frequency'] ?? 'daily';
+            return match ($frequency) {
+                'weekly' => (int) ceil($days / 7) . ' weekly backups generated',
+                'monthly' => (int) ceil($days / 30) . ' monthly backups generated',
+                default => $days . ' daily backups generated',
+            };
+        }
+
+        return $days . ' days of ' . $service->display_name . ' provided';
     }
 
     public function processUnprocessedFeedback(): void

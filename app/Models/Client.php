@@ -63,6 +63,11 @@ class Client extends Model
         return $this->hasMany(MonitoredEndpoint::class);
     }
 
+    public function services(): HasMany
+    {
+        return $this->hasMany(ClientService::class);
+    }
+
     public function getOutstandingBalanceAttribute(): float
     {
         return (float) $this->invoices()

@@ -341,6 +341,192 @@
                 </div>
             </div>
 
+            <!-- Services -->
+            <div class="mt-6 bg-white overflow-hidden shadow-sm sm:rounded-lg p-6" x-data="serviceManager()">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-800">Services</h3>
+                    <button @click="openCreateForm()" x-show="!showForm" class="text-sm text-indigo-600 hover:text-indigo-800">+ Add</button>
+                </div>
+
+                <template x-if="showForm">
+                    <div class="mb-4 p-4 bg-gray-50 rounded-lg space-y-3">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Service Type</label>
+                                <select x-model="form.service_type" @change="onTypeChange()" class="block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    <option value="hosting">Hosting</option>
+                                    <option value="email">Email</option>
+                                    <option value="backups">Backups</option>
+                                    <option value="custom">Custom</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Display Name</label>
+                                <input type="text" x-model="form.display_name" placeholder="e.g., Web Hosting" class="block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                            </div>
+                        </div>
+
+                        <div x-show="form.service_type === 'backups'">
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Backup Frequency</label>
+                            <select x-model="form.config.frequency" class="block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <option value="daily">Daily</option>
+                                <option value="weekly">Weekly</option>
+                                <option value="monthly">Monthly</option>
+                            </select>
+                        </div>
+
+                        <label class="flex items-center gap-2 text-sm text-gray-600">
+                            <input type="checkbox" x-model="form.is_active" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                            Active
+                        </label>
+
+                        <div class="flex gap-2 pt-1">
+                            <button type="button" @click="saveService()" :disabled="saving" class="px-3 py-1.5 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700 disabled:opacity-50">
+                                <span x-text="saving ? 'Saving...' : (editingId ? 'Update' : 'Add Service')"></span>
+                            </button>
+                            <button type="button" @click="cancelForm()" class="px-3 py-1.5 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300">Cancel</button>
+                        </div>
+
+                        <template x-if="formError">
+                            <p class="text-red-600 text-xs" x-text="formError"></p>
+                        </template>
+                    </div>
+                </template>
+
+                <template x-for="service in services" :key="service.id">
+                    <div class="flex justify-between items-center py-2.5 border-b last:border-b-0">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full" :class="service.is_active ? 'bg-green-500' : 'bg-gray-300'"></span>
+                            <span class="font-medium text-sm" x-text="service.display_name"></span>
+                            <span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600" x-text="service.service_type"></span>
+                            <span x-show="service.service_type === 'backups' && service.config && service.config.frequency" class="text-xs text-gray-400" x-text="'(' + (service.config?.frequency || '') + ')'"></span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button @click="openEditForm(service)" class="text-xs text-indigo-600 hover:text-indigo-800">Edit</button>
+                            <button @click="deleteService(service)" class="text-xs text-red-600 hover:text-red-800">Delete</button>
+                        </div>
+                    </div>
+                </template>
+
+                <p x-show="services.length === 0 && !showForm" class="text-gray-500 text-sm">No services configured. Services appear on reports with calculated metrics.</p>
+
+                @php
+                    $servicesJson = $client->services->map(function ($s) {
+                        return [
+                            'id' => $s->id,
+                            'service_type' => $s->service_type,
+                            'display_name' => $s->display_name,
+                            'config' => $s->config,
+                            'is_active' => $s->is_active,
+                            'sort_order' => $s->sort_order,
+                        ];
+                    })->toArray();
+                @endphp
+                <script>
+                    function serviceManager() {
+                        return {
+                            services: @json($servicesJson),
+                            showForm: false,
+                            saving: false,
+                            editingId: null,
+                            formError: '',
+                            form: { service_type: 'hosting', display_name: '', config: { frequency: 'daily' }, is_active: true },
+                            clientId: {{ $client->id }},
+
+                            defaultNames: { hosting: 'Web Hosting', email: 'Email Service', backups: 'Daily Backups', custom: '' },
+
+                            openCreateForm() {
+                                this.editingId = null;
+                                this.form = { service_type: 'hosting', display_name: 'Web Hosting', config: { frequency: 'daily' }, is_active: true };
+                                this.formError = '';
+                                this.showForm = true;
+                            },
+
+                            openEditForm(service) {
+                                this.editingId = service.id;
+                                this.form = {
+                                    service_type: service.service_type,
+                                    display_name: service.display_name,
+                                    config: service.config ? { ...service.config } : { frequency: 'daily' },
+                                    is_active: service.is_active,
+                                };
+                                this.formError = '';
+                                this.showForm = true;
+                            },
+
+                            cancelForm() {
+                                this.showForm = false;
+                                this.editingId = null;
+                                this.formError = '';
+                            },
+
+                            onTypeChange() {
+                                if (!this.editingId && this.defaultNames[this.form.service_type]) {
+                                    this.form.display_name = this.defaultNames[this.form.service_type];
+                                }
+                            },
+
+                            async saveService() {
+                                this.formError = '';
+                                if (!this.form.display_name.trim()) { this.formError = 'Display name is required.'; return; }
+
+                                this.saving = true;
+                                const url = this.editingId
+                                    ? `/clients/${this.clientId}/services/${this.editingId}`
+                                    : `/clients/${this.clientId}/services`;
+                                const method = this.editingId ? 'PUT' : 'POST';
+
+                                const payload = { ...this.form };
+                                if (payload.service_type !== 'backups') {
+                                    payload.config = null;
+                                }
+
+                                try {
+                                    const resp = await fetch(url, {
+                                        method,
+                                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                                        body: JSON.stringify(payload)
+                                    });
+                                    if (!resp.ok) {
+                                        const err = await resp.json();
+                                        this.formError = err.message || 'Failed to save service.';
+                                        this.saving = false;
+                                        return;
+                                    }
+                                    const data = await resp.json();
+                                    if (this.editingId) {
+                                        const idx = this.services.findIndex(s => s.id === this.editingId);
+                                        if (idx !== -1) this.services[idx] = data.service;
+                                    } else {
+                                        this.services.push(data.service);
+                                    }
+                                    this.showForm = false;
+                                    this.editingId = null;
+                                } catch (e) {
+                                    this.formError = 'Network error. Please try again.';
+                                }
+                                this.saving = false;
+                            },
+
+                            async deleteService(service) {
+                                if (!confirm(`Delete "${service.display_name}"?`)) return;
+                                try {
+                                    const resp = await fetch(`/clients/${this.clientId}/services/${service.id}`, {
+                                        method: 'DELETE',
+                                        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
+                                    });
+                                    if (resp.ok) {
+                                        this.services = this.services.filter(s => s.id !== service.id);
+                                    }
+                                } catch (e) {
+                                    alert('Failed to delete service.');
+                                }
+                            }
+                        }
+                    }
+                </script>
+            </div>
+
             <!-- GitHub Repositories -->
             <div class="mt-6 bg-white overflow-hidden shadow-sm sm:rounded-lg p-6" x-data="repoManager()">
                 <div class="flex justify-between items-center mb-4">
@@ -960,6 +1146,7 @@
                         <li>{{ $client->repositories->count() }} repository link(s)</li>
                         <li>{{ $client->servers->count() }} SSH server(s)</li>
                         <li>{{ $client->monitoredEndpoints->count() }} monitored endpoint(s)</li>
+                        <li>{{ $client->services->count() }} service(s)</li>
                         <li>{{ $client->pricingPresets->count() }} pricing preset(s)</li>
                     </ul>
                     <p class="text-sm text-red-800 mb-3">Type <strong>{{ $client->company_name }}</strong> to confirm:</p>

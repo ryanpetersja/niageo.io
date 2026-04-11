@@ -119,11 +119,34 @@
                 <div class="stat-number">{{ $report->summary_item_count }}</div>
                 <div class="stat-label">Deliverables</div>
             </div>
+            @if($report->uptime_score !== null)
+                <div class="stat-item">
+                    <div class="stat-number" style="color: #16a34a;">{{ number_format($report->uptime_score, 2) }}%</div>
+                    <div class="stat-label">Uptime</div>
+                </div>
+            @endif
             <div class="stat-item">
                 <div class="stat-number">{{ $report->date_from->diffInDays($report->date_to) }}</div>
                 <div class="stat-label">Days</div>
             </div>
         </div>
+
+        <!-- Services Provided -->
+        @if($report->service_snapshot && count($report->service_snapshot) > 0)
+            <div class="report-heading">Services Provided</div>
+            <div style="margin-bottom: 20px; border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden; page-break-inside: avoid;">
+                @foreach($report->service_snapshot as $service)
+                    <div style="display: table; width: 100%; padding: 8px 14px; border-bottom: 1px solid #f3f4f6; {{ $loop->last ? 'border-bottom: none;' : '' }}">
+                        <div style="display: table-cell; vertical-align: middle; width: 50%;">
+                            <span style="font-size: 12px; font-weight: 600; color: #1f2937;">{{ $service['display_name'] }}</span>
+                        </div>
+                        <div style="display: table-cell; vertical-align: middle; width: 50%; text-align: right;">
+                            <span style="font-size: 11px; color: #6b7280;">{{ $service['metric_text'] }}</span>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        @endif
 
         <!-- Development Summary -->
         @if($report->ai_summary)

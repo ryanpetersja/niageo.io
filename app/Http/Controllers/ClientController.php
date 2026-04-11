@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Client;
+use App\Models\ClientService;
 use App\Services\ClientStatementPdfService;
 use Illuminate\Http\Request;
 
@@ -54,7 +55,7 @@ class ClientController extends Controller
 
     public function show(Client $client)
     {
-        $client->load(['contacts', 'pricingPresets.items', 'monitoredEndpoints', 'invoices' => function ($q) {
+        $client->load(['contacts', 'pricingPresets.items', 'monitoredEndpoints', 'services', 'invoices' => function ($q) {
             $q->latest()->limit(10);
         }]);
 
@@ -100,6 +101,53 @@ class ClientController extends Controller
         $to = $request->input('to', now()->toDateString());
 
         return $this->statementPdf->stream($client, $from, $to);
+    }
+
+    public function storeService(Request $request, Client $client)
+    {
+        $validated = $request->validate([
+            'service_type' => 'required|in:hosting,email,backups,custom',
+            'display_name' => 'required|string|max:255',
+            'config' => 'nullable|array',
+            'config.frequency' => 'nullable|in:daily,weekly,monthly',
+            'is_active' => 'boolean',
+            'sort_order' => 'integer|min:0',
+        ]);
+
+        $validated['is_active'] = $request->boolean('is_active', true);
+        $validated['sort_order'] = $validated['sort_order'] ?? $client->services()->count();
+
+        $service = $client->services()->create($validated);
+
+        return response()->json(['service' => $service]);
+    }
+
+    public function updateService(Request $request, Client $client, ClientService $service)
+    {
+        abort_unless($service->client_id === $client->id, 404);
+
+        $validated = $request->validate([
+            'service_type' => 'required|in:hosting,email,backups,custom',
+            'display_name' => 'required|string|max:255',
+            'config' => 'nullable|array',
+            'config.frequency' => 'nullable|in:daily,weekly,monthly',
+            'is_active' => 'boolean',
+            'sort_order' => 'integer|min:0',
+        ]);
+
+        $validated['is_active'] = $request->boolean('is_active', true);
+        $service->update($validated);
+
+        return response()->json(['service' => $service->fresh()]);
+    }
+
+    public function destroyService(Client $client, ClientService $service)
+    {
+        abort_unless($service->client_id === $client->id, 404);
+
+        $service->delete();
+
+        return response()->json(['success' => true]);
     }
 
     public function statementDownload(Request $request, Client $client)

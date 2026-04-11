@@ -45,14 +45,45 @@
                             ">{{ ucfirst($report->status) }}</span>
                         </div>
 
-                        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+                        <div class="grid grid-cols-2 md:grid-cols-{{ $report->uptime_score !== null ? '6' : '5' }} gap-4 text-sm">
                             <div><span class="text-gray-500">Period</span><div class="font-medium">{{ $report->date_from->format('M d') }} — {{ $report->date_to->format('M d, Y') }}</div></div>
                             <div><span class="text-gray-500">Commits</span><div class="font-medium">{{ $report->commit_count }}</div></div>
                             <div><span class="text-gray-500">Repositories</span><div class="font-medium">{{ $report->repo_count }}</div></div>
                             <div><span class="text-gray-500">Server Commands</span><div class="font-medium">{{ $report->raw_server_activity ? count($report->raw_server_activity) : 0 }}</div></div>
+                            @if($report->uptime_score !== null)
+                                <div><span class="text-gray-500">Uptime</span><div class="font-medium text-green-700">{{ number_format($report->uptime_score, 2) }}%</div></div>
+                            @endif
                             <div><span class="text-gray-500">Summary Items</span><div class="font-medium">{{ $report->summary_item_count }}</div></div>
                         </div>
                     </div>
+
+                    <!-- Services Provided -->
+                    @if($report->service_snapshot && count($report->service_snapshot) > 0)
+                        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">Services Provided</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                @foreach($report->service_snapshot as $service)
+                                    <div class="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                                        <div class="mt-0.5 flex-shrink-0">
+                                            @if($service['service_type'] === 'hosting')
+                                                <svg class="w-5 h-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2" /></svg>
+                                            @elseif($service['service_type'] === 'email')
+                                                <svg class="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                                            @elseif($service['service_type'] === 'backups')
+                                                <svg class="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" /></svg>
+                                            @else
+                                                <svg class="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                            @endif
+                                        </div>
+                                        <div>
+                                            <div class="font-medium text-sm text-gray-800">{{ $service['display_name'] }}</div>
+                                            <div class="text-xs text-gray-500">{{ $service['metric_text'] }}</div>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
 
                     <!-- AI Summary -->
                     @if($report->has_summary)
@@ -1156,6 +1187,63 @@
                                 </form>
                             @endif
                         </div>
+                    </div>
+
+                    <!-- Uptime Score -->
+                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6" x-data="uptimeScoreEditor()">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-3">Uptime Score</h3>
+                        @if(!in_array($report->status, ['sent', 'archived']))
+                            <div class="flex items-center gap-2">
+                                <input type="number" x-model="score" step="0.01" min="0" max="100" placeholder="e.g., 99.95"
+                                    class="flex-1 rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <span class="text-sm text-gray-500">%</span>
+                            </div>
+                            <div class="flex items-center gap-2 mt-2">
+                                <button @click="saveScore()" :disabled="saving" class="px-3 py-1 bg-indigo-600 text-white rounded text-xs font-medium hover:bg-indigo-700 disabled:opacity-50">
+                                    <span x-text="saving ? 'Saving...' : 'Save'"></span>
+                                </button>
+                                <span x-show="message" x-cloak class="text-xs" :class="messageError ? 'text-red-600' : 'text-green-600'" x-text="message"></span>
+                            </div>
+                        @else
+                            <div class="text-2xl font-bold {{ $report->uptime_score !== null ? 'text-green-700' : 'text-gray-400' }}">
+                                {{ $report->uptime_score !== null ? number_format($report->uptime_score, 2) . '%' : 'N/A' }}
+                            </div>
+                        @endif
+
+                        <script>
+                            function uptimeScoreEditor() {
+                                return {
+                                    score: '{{ $report->uptime_score ?? "" }}',
+                                    saving: false,
+                                    message: '',
+                                    messageError: false,
+                                    async saveScore() {
+                                        this.saving = true;
+                                        this.message = '';
+                                        try {
+                                            const resp = await fetch(`/reports/{{ $report->id }}/uptime-score`, {
+                                                method: 'PUT',
+                                                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                                                body: JSON.stringify({ uptime_score: this.score || null })
+                                            });
+                                            if (resp.ok) {
+                                                this.message = 'Saved';
+                                                this.messageError = false;
+                                                setTimeout(() => this.message = '', 3000);
+                                            } else {
+                                                const err = await resp.json();
+                                                this.message = err.message || 'Failed to save.';
+                                                this.messageError = true;
+                                            }
+                                        } catch (e) {
+                                            this.message = 'Network error.';
+                                            this.messageError = true;
+                                        }
+                                        this.saving = false;
+                                    }
+                                }
+                            }
+                        </script>
                     </div>
 
                     <!-- Invoice Link -->

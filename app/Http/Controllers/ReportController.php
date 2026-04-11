@@ -70,6 +70,7 @@ class ReportController extends Controller
             'date_from' => 'required|date',
             'date_to' => 'required|date|after_or_equal:date_from',
             'invoice_id' => 'nullable|exists:invoices,id',
+            'uptime_score' => 'nullable|numeric|min:0|max:100',
             'notes' => 'nullable|string',
             'internal_notes' => 'nullable|string',
         ]);
@@ -117,6 +118,7 @@ class ReportController extends Controller
             'date_from' => 'required|date',
             'date_to' => 'required|date|after_or_equal:date_from',
             'invoice_id' => 'nullable|exists:invoices,id',
+            'uptime_score' => 'nullable|numeric|min:0|max:100',
             'notes' => 'nullable|string',
             'internal_notes' => 'nullable|string',
         ]);
@@ -216,6 +218,21 @@ class ReportController extends Controller
     public function downloadPdf(Report $report)
     {
         return $this->pdfService->download($report);
+    }
+
+    public function updateUptimeScore(Request $request, Report $report)
+    {
+        if (in_array($report->status, ['sent', 'archived'])) {
+            return response()->json(['message' => 'Cannot edit sent or archived reports.'], 422);
+        }
+
+        $validated = $request->validate([
+            'uptime_score' => 'nullable|numeric|min:0|max:100',
+        ]);
+
+        $report->update(['uptime_score' => $validated['uptime_score']]);
+
+        return response()->json(['success' => true]);
     }
 
     public function updateSummary(Request $request, Report $report)
