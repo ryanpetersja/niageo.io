@@ -324,7 +324,8 @@ class ReportService
             };
         }
 
-        return $days . ' days of ' . $service->display_name . ' provided';
+        $months = max(1, (int) round($days / 30));
+        return $months . ' ' . ($months === 1 ? 'month' : 'months') . ' of ' . $service->display_name . ' provided';
     }
 
     public function processUnprocessedFeedback(): void
