@@ -205,10 +205,6 @@ class ReportService
 
     public function delete(Report $report): void
     {
-        if ($report->status === 'sent') {
-            throw new \RuntimeException('Sent reports cannot be deleted.');
-        }
-
         $report->delete();
     }
 

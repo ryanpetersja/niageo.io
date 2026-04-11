@@ -1178,12 +1178,32 @@
                                 @endif
                             @endforeach
 
-                            @if($report->status === 'draft')
-                                <form method="POST" action="{{ route('reports.destroy', $report) }}" onsubmit="return confirm('Delete this report?')">
-                                    @csrf @method('DELETE')
-                                    <button type="submit" class="w-full text-left px-4 py-2 rounded-md text-sm font-medium bg-red-100 text-red-800 hover:bg-red-200 transition">Delete Report</button>
-                                </form>
-                            @endif
+                            <div x-data="{ confirmDelete: false }">
+                                <button @click="confirmDelete = true" class="w-full text-left px-4 py-2 rounded-md text-sm font-medium bg-red-100 text-red-800 hover:bg-red-200 transition">Delete Report</button>
+
+                                <!-- Delete Confirmation Modal -->
+                                <div x-show="confirmDelete" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" @keydown.escape.window="confirmDelete = false">
+                                    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6" @click.away="confirmDelete = false">
+                                        <div class="flex items-center gap-3 mb-4">
+                                            <div class="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                                                <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+                                            </div>
+                                            <div>
+                                                <h3 class="text-lg font-semibold text-gray-900">Delete Report</h3>
+                                                <p class="text-sm text-gray-500">This action cannot be undone.</p>
+                                            </div>
+                                        </div>
+                                        <p class="text-sm text-gray-700 mb-6">Are you sure you want to permanently delete report <span class="font-semibold">{{ $report->report_number }}</span>?</p>
+                                        <div class="flex justify-end gap-3">
+                                            <button @click="confirmDelete = false" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition">Cancel</button>
+                                            <form method="POST" action="{{ route('reports.destroy', $report) }}">
+                                                @csrf @method('DELETE')
+                                                <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition">Delete</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
