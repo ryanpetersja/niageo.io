@@ -10,7 +10,7 @@ class ReportPdfService
 {
     public function generate(Report $report): \Barryvdh\DomPDF\PDF
     {
-        $report->load(['client', 'invoice']);
+        $report->load(['client', 'invoice.lineItems', 'invoice.client']);
         $branding = BrandingSetting::getSettings();
 
         return Pdf::loadView('pdf.report', [
