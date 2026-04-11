@@ -148,9 +148,9 @@
             </div>
         @endif
 
-        <!-- Development Summary -->
+        <!-- Maintenance Activity Summary -->
         @if($report->ai_summary)
-            <div class="report-heading">Development Activity Summary</div>
+            <div class="report-heading">Maintenance Activity Summary</div>
 
             @php
                 $categoryMeta = [

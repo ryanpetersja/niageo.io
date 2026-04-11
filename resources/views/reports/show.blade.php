@@ -89,7 +89,7 @@
                     @if($report->has_summary)
                         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6" x-data="summaryEditor()">
                             <div class="flex justify-between items-center mb-4">
-                                <h3 class="text-lg font-semibold text-gray-800">Development Summary</h3>
+                                <h3 class="text-lg font-semibold text-gray-800">Maintenance Activity Summary</h3>
                                 @if(!in_array($report->status, ['sent', 'archived']))
                                     <div class="flex items-center gap-2">
                                         <template x-if="dirty">
@@ -807,7 +807,7 @@
                                     <label class="text-xs font-medium text-gray-600 mb-1 block">Apply feedback to:</label>
                                     <select x-model="summaryType" class="rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
                                         @if($report->has_summary)
-                                            <option value="ai_summary">Development Summary</option>
+                                            <option value="ai_summary">Maintenance Activity Summary</option>
                                         @endif
                                         @if($report->has_server_summary)
                                             <option value="server_summary">Server Activity Summary</option>
