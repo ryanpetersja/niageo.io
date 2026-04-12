@@ -249,6 +249,7 @@ class ReportController extends Controller
             'ai_summary.security' => 'present|array',
             'ai_summary.infrastructure' => 'present|array',
             'ai_summary.commit_refs' => 'sometimes|array',
+            'ai_summary.item_dates' => 'sometimes|array',
         ]);
 
         // Preserve existing commit_refs if not provided in the request
@@ -275,6 +276,7 @@ class ReportController extends Controller
             'server_summary.improvements' => 'present|array',
             'server_summary.security' => 'present|array',
             'server_summary.infrastructure' => 'present|array',
+            'server_summary.item_dates' => 'sometimes|array',
         ]);
 
         $report->update(['server_summary' => $validated['server_summary']]);
