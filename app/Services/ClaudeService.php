@@ -425,4 +425,242 @@ PROMPT;
         $defaults = ['features' => [], 'bugs' => [], 'improvements' => [], 'security' => [], 'infrastructure' => []];
         return array_merge($defaults, $summary);
     }
+
+    // ── Scope Builder Methods ──────────────────────────────────────
+
+    public function generateScopeSections(string $description, string $clientName, string $projectTitle): array
+    {
+        $apiKey = config('services.anthropic.api_key');
+        $model = config('services.anthropic.model', 'claude-sonnet-4-5-20250929');
+
+        if (empty($apiKey)) {
+            throw new \RuntimeException('Anthropic API key is not configured.');
+        }
+
+        $systemPrompt = <<<PROMPT
+You are a professional proposal writer creating a project scope document for a client named "{$clientName}".
+
+Given a project description, generate compelling scope content sections.
+
+Return ONLY a valid JSON object with exactly these 8 keys. No markdown, no code fences, no explanation — just the JSON object:
+
+{
+  "purpose_statement": "A clear 2-3 sentence statement of the project's purpose and strategic intent",
+  "problem_description": "A compelling description of the problem being solved, including business impact (3-5 sentences)",
+  "solution_overview": "A high-level overview of the proposed solution and approach (3-5 sentences)",
+  "goals_objectives": "Key goals and objectives, one per line, each starting with a bullet point (use • prefix)",
+  "assumptions": "Project assumptions, one per line, each starting with a bullet point (use • prefix)",
+  "out_of_scope": "Items explicitly excluded from scope, one per line, each starting with a bullet point (use • prefix)",
+  "timeline_summary": "A realistic timeline overview with phases and durations (2-4 sentences)",
+  "next_steps": "Clear next steps after scope approval, one per line, each starting with a bullet point (use • prefix)"
+}
+
+Guidelines:
+- Use professional, confident language appropriate for client-facing proposals
+- Focus on business value and outcomes, not just technical details
+- Be specific to the project described — avoid generic filler
+- Each section should be substantive but concise
+PROMPT;
+
+        $userPrompt = "Project: {$projectTitle}\nClient: {$clientName}\n\nDescription:\n{$description}";
+
+        $response = Http::withHeaders([
+            'x-api-key' => $apiKey,
+            'anthropic-version' => '2023-06-01',
+            'Content-Type' => 'application/json',
+        ])->timeout(120)->post('https://api.anthropic.com/v1/messages', [
+            'model' => $model,
+            'max_tokens' => 8192,
+            'system' => $systemPrompt,
+            'messages' => [['role' => 'user', 'content' => $userPrompt]],
+        ]);
+
+        if ($response->failed()) {
+            Log::error('Claude API failed (scope sections)', ['status' => $response->status(), 'body' => $response->body()]);
+            throw new \RuntimeException('Failed to generate scope sections. Please try again.');
+        }
+
+        $text = $response->json('content.0.text', '');
+        $text = preg_replace('/^```(?:json)?\s*/m', '', $text);
+        $text = preg_replace('/\s*```$/m', '', $text);
+        $text = trim($text);
+
+        $sections = json_decode($text, true);
+
+        if (!is_array($sections)) {
+            Log::error('Claude returned invalid JSON (scope sections)', ['text' => $text]);
+            throw new \RuntimeException('AI returned an invalid response. Please try again.');
+        }
+
+        $requiredKeys = ['purpose_statement', 'problem_description', 'solution_overview', 'goals_objectives', 'assumptions', 'out_of_scope', 'timeline_summary', 'next_steps'];
+        foreach ($requiredKeys as $key) {
+            if (!isset($sections[$key])) {
+                $sections[$key] = '';
+            }
+        }
+
+        return $sections;
+    }
+
+    public function generateScopeItems(string $description, string $clientName, string $projectTitle, ?array $sections = null): array
+    {
+        $apiKey = config('services.anthropic.api_key');
+        $model = config('services.anthropic.model', 'claude-sonnet-4-5-20250929');
+
+        if (empty($apiKey)) {
+            throw new \RuntimeException('Anthropic API key is not configured.');
+        }
+
+        $systemPrompt = <<<PROMPT
+You are a professional scope estimator creating scope line items for a client named "{$clientName}".
+
+Return ONLY a valid JSON object with a "scope_items" array. No markdown, no code fences, no explanation.
+
+Each scope item must have these fields:
+{
+  "scope_items": [
+    {
+      "title": "Short descriptive title (max 255 chars)",
+      "description": "What this scope item covers (1-3 sentences)",
+      "category": "Category grouping (e.g., Development, Design, Infrastructure, Testing, Project Management)",
+      "price": 0.00,
+      "is_mandatory": true,
+      "is_optional": false,
+      "is_recommended": false,
+      "business_value_statement": "Why this matters to the business (1-2 sentences)",
+      "effort_description": "Effort estimate (e.g., '2-3 weeks', '40 hours')",
+      "deliverable_description": "What will be delivered"
+    }
+  ]
+}
+
+Guidelines:
+- Generate 8-15 scope items appropriate for the project
+- Use 3-6 distinct categories
+- About 40-50% should be mandatory (is_mandatory: true, is_optional: false)
+- About 50-60% should be optional (is_mandatory: false, is_optional: true)
+- Mark 2-4 optional items as recommended (is_recommended: true)
+- Prices should be realistic for professional services (range \$500 - \$50,000 per item)
+- Business value statements should focus on outcomes, not features
+PROMPT;
+
+        $userPrompt = "Project: {$projectTitle}\nClient: {$clientName}\n\nDescription:\n{$description}";
+
+        if ($sections) {
+            if (!empty($sections['purpose_statement'])) {
+                $userPrompt .= "\n\nPurpose: " . $sections['purpose_statement'];
+            }
+            if (!empty($sections['solution_overview'])) {
+                $userPrompt .= "\nSolution: " . $sections['solution_overview'];
+            }
+        }
+
+        $response = Http::withHeaders([
+            'x-api-key' => $apiKey,
+            'anthropic-version' => '2023-06-01',
+            'Content-Type' => 'application/json',
+        ])->timeout(120)->post('https://api.anthropic.com/v1/messages', [
+            'model' => $model,
+            'max_tokens' => 8192,
+            'system' => $systemPrompt,
+            'messages' => [['role' => 'user', 'content' => $userPrompt]],
+        ]);
+
+        if ($response->failed()) {
+            Log::error('Claude API failed (scope items)', ['status' => $response->status(), 'body' => $response->body()]);
+            throw new \RuntimeException('Failed to generate scope items. Please try again.');
+        }
+
+        $text = $response->json('content.0.text', '');
+        $text = preg_replace('/^```(?:json)?\s*/m', '', $text);
+        $text = preg_replace('/\s*```$/m', '', $text);
+        $text = trim($text);
+
+        $parsed = json_decode($text, true);
+
+        if (!is_array($parsed) || empty($parsed['scope_items'])) {
+            Log::error('Claude returned invalid JSON (scope items)', ['text' => $text]);
+            throw new \RuntimeException('AI returned an invalid response. Please try again.');
+        }
+
+        $validItems = [];
+        foreach ($parsed['scope_items'] as $item) {
+            if (empty($item['title'])) continue;
+
+            $validItems[] = [
+                'title' => substr($item['title'] ?? '', 0, 255),
+                'description' => substr($item['description'] ?? '', 0, 2000),
+                'category' => substr($item['category'] ?? 'General', 0, 100),
+                'price' => max(0, (float) ($item['price'] ?? $item['price_impact'] ?? 0)),
+                'is_mandatory' => (bool) ($item['is_mandatory'] ?? false),
+                'is_optional' => (bool) ($item['is_optional'] ?? true),
+                'is_recommended' => (bool) ($item['is_recommended'] ?? false),
+                'business_value_statement' => substr($item['business_value_statement'] ?? '', 0, 1000),
+                'effort_description' => substr($item['effort_description'] ?? '', 0, 500),
+                'deliverable_description' => substr($item['deliverable_description'] ?? '', 0, 1000),
+            ];
+        }
+
+        if (empty($validItems)) {
+            throw new \RuntimeException('No valid scope items could be generated. Please try again.');
+        }
+
+        return $validItems;
+    }
+
+    public function refineScopeSection(string $sectionKey, string $currentContent, string $instruction, string $projectTitle, string $clientName): string
+    {
+        $apiKey = config('services.anthropic.api_key');
+        $model = config('services.anthropic.model', 'claude-sonnet-4-5-20250929');
+
+        if (empty($apiKey)) {
+            throw new \RuntimeException('Anthropic API key is not configured.');
+        }
+
+        $sectionLabels = [
+            'purpose_statement' => 'Purpose Statement',
+            'problem_description' => 'Problem Description',
+            'solution_overview' => 'Solution Overview',
+            'goals_objectives' => 'Goals & Objectives',
+            'assumptions' => 'Assumptions',
+            'out_of_scope' => 'Out of Scope',
+            'timeline_summary' => 'Timeline Summary',
+            'next_steps' => 'Next Steps',
+        ];
+
+        $sectionLabel = $sectionLabels[$sectionKey] ?? $sectionKey;
+
+        $systemPrompt = <<<PROMPT
+You are a professional proposal writer for a client named "{$clientName}". You will receive the current content of a scope section and an instruction describing how to modify it.
+
+Return ONLY the updated section text. No JSON, no markdown fences, no explanation — just the revised content.
+
+Rules:
+- Apply the instruction precisely to the existing content
+- Maintain the same professional tone and style
+- Keep the same general format (if bullet points, keep bullet points; if paragraphs, keep paragraphs)
+- For list-style sections (goals, assumptions, out_of_scope, next_steps), use "• " prefix for each item
+- Return ONLY the final text
+PROMPT;
+
+        $userPrompt = "Project: {$projectTitle}\nClient: {$clientName}\n\nSection: {$sectionLabel}\n\nCurrent content:\n{$currentContent}\n\nInstruction: {$instruction}";
+
+        $response = Http::withHeaders([
+            'x-api-key' => $apiKey,
+            'anthropic-version' => '2023-06-01',
+            'Content-Type' => 'application/json',
+        ])->timeout(60)->post('https://api.anthropic.com/v1/messages', [
+            'model' => $model,
+            'max_tokens' => 4096,
+            'system' => $systemPrompt,
+            'messages' => [['role' => 'user', 'content' => $userPrompt]],
+        ]);
+
+        if ($response->failed()) {
+            Log::error('Claude API failed (refine scope section)', ['status' => $response->status(), 'body' => $response->body()]);
+            throw new \RuntimeException('Failed to refine section. Please try again.');
+        }
+
+        return trim($response->json('content.0.text', ''));
+    }
 }

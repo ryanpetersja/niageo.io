@@ -26,6 +26,7 @@
                         </div>
                     </div>
                 </div>
+                <a href="{{ route('scopes.create', ['client_id' => $client->id]) }}" class="inline-flex items-center px-4 py-2 bg-purple-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-purple-700 transition">New Scope</a>
                 <a href="{{ route('reports.create', ['client_id' => $client->id]) }}" class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 transition">New Report</a>
                 <a href="{{ route('invoices.create', ['client_id' => $client->id]) }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 transition">New Invoice</a>
                 <a href="{{ route('clients.edit', $client) }}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 transition">Edit</a>
@@ -1078,6 +1079,34 @@
                 @endforelse
             </div>
 
+            <!-- Recent Scopes -->
+            <div class="mt-6 bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-800">Recent Scopes</h3>
+                    <a href="{{ route('scopes.create', ['client_id' => $client->id]) }}" class="text-sm text-indigo-600 hover:text-indigo-800">+ New Scope</a>
+                </div>
+                @forelse($client->scopes as $scope)
+                    <div class="flex justify-between items-center py-3 border-b last:border-b-0">
+                        <div>
+                            <a href="{{ route('scopes.show', $scope) }}" class="text-indigo-600 hover:text-indigo-800 font-medium">{{ $scope->scope_number }}</a>
+                            <span class="text-sm text-gray-500 ml-2">{{ $scope->title }}</span>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                {{ $scope->status === 'draft' ? 'bg-gray-100 text-gray-800' : '' }}
+                                {{ $scope->status === 'sent' ? 'bg-blue-100 text-blue-800' : '' }}
+                                {{ $scope->status === 'approved' ? 'bg-green-100 text-green-800' : '' }}
+                                {{ $scope->status === 'archived' ? 'bg-yellow-100 text-yellow-800' : '' }}
+                            ">{{ ucfirst($scope->status) }}</span>
+                            <span class="text-sm font-medium">{{ $scope->currency_symbol }}{{ number_format($scope->total_price, 2) }}</span>
+                            <span class="text-xs text-gray-400">{{ $scope->created_at->format('M d, Y') }}</span>
+                        </div>
+                    </div>
+                @empty
+                    <p class="text-gray-500 text-sm">No scopes yet.</p>
+                @endforelse
+            </div>
+
             <!-- Recent Reports -->
             <div class="mt-6 bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                 <div class="flex justify-between items-center mb-4">
@@ -1143,6 +1172,7 @@
                         <li>{{ $client->contacts->count() }} contact(s)</li>
                         <li>{{ $client->invoices->count() }} invoice(s) with all line items, payments & history</li>
                         <li>{{ $client->reports()->count() }} report(s) with all summaries & history</li>
+                        <li>{{ $client->scopes->count() }} scope(s) with all items</li>
                         <li>{{ $client->repositories->count() }} repository link(s)</li>
                         <li>{{ $client->servers->count() }} SSH server(s)</li>
                         <li>{{ $client->monitoredEndpoints->count() }} monitored endpoint(s)</li>

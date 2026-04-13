@@ -10,6 +10,7 @@ use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PricingPresetController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ScopeController;
 use App\Http\Controllers\SubscriptionBillController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -74,6 +75,19 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/reports/{report}/feedback/reject', [ReportController::class, 'rejectFeedback'])->name('reports.feedback.reject');
     Route::put('/reports/{report}/uptime-score', [ReportController::class, 'updateUptimeScore'])->name('reports.update-uptime-score');
     Route::get('/api/clients/{client}/invoices', [ReportController::class, 'clientInvoices'])->name('api.client.invoices');
+
+    // Scopes
+    Route::resource('scopes', ScopeController::class);
+    Route::post('/scopes/{scope}/generate', [ScopeController::class, 'generate'])->name('scopes.generate');
+    Route::post('/scopes/{scope}/refine-section', [ScopeController::class, 'refineSection'])->name('scopes.refine-section');
+    Route::put('/scopes/{scope}/sections', [ScopeController::class, 'updateSections'])->name('scopes.update-sections');
+    Route::put('/scopes/{scope}/items', [ScopeController::class, 'updateItems'])->name('scopes.update-items');
+    Route::post('/scopes/{scope}/link-invoice', [ScopeController::class, 'linkInvoice'])->name('scopes.link-invoice');
+    Route::post('/scopes/{scope}/unlink-invoice', [ScopeController::class, 'unlinkInvoice'])->name('scopes.unlink-invoice');
+    Route::get('/scopes/{scope}/pdf', [ScopeController::class, 'pdf'])->name('scopes.pdf');
+    Route::get('/scopes/{scope}/pdf/download', [ScopeController::class, 'downloadPdf'])->name('scopes.pdf.download');
+    Route::post('/scopes/{scope}/send', [ScopeController::class, 'send'])->name('scopes.send');
+    Route::post('/scopes/{scope}/approve', [ScopeController::class, 'approve'])->name('scopes.approve');
 
     // Uptime Monitoring
     Route::resource('uptime', MonitoredEndpointController::class);

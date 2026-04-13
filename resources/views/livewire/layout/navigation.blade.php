@@ -35,6 +35,9 @@ new class extends Component
                     <x-nav-link :href="route('reports.index')" :active="request()->routeIs('reports.*')" wire:navigate>
                         Reports
                     </x-nav-link>
+                    <x-nav-link :href="route('scopes.index')" :active="request()->routeIs('scopes.*')" wire:navigate>
+                        Scopes
+                    </x-nav-link>
                     <x-nav-link :href="route('uptime.index')" :active="request()->routeIs('uptime.*')" wire:navigate>
                         Monitoring
                     </x-nav-link>
@@ -92,6 +95,7 @@ new class extends Component
             <x-responsive-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*')" wire:navigate>Clients</x-responsive-nav-link>
             <x-responsive-nav-link :href="route('invoices.index')" :active="request()->routeIs('invoices.*')" wire:navigate>Invoices</x-responsive-nav-link>
             <x-responsive-nav-link :href="route('reports.index')" :active="request()->routeIs('reports.*')" wire:navigate>Reports</x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('scopes.index')" :active="request()->routeIs('scopes.*')" wire:navigate>Scopes</x-responsive-nav-link>
             <x-responsive-nav-link :href="route('uptime.index')" :active="request()->routeIs('uptime.*')" wire:navigate>Monitoring</x-responsive-nav-link>
             <x-responsive-nav-link :href="route('subscriptions.index')" :active="request()->routeIs('subscriptions.*')" wire:navigate>Subscriptions</x-responsive-nav-link>
             @can('manage-users')

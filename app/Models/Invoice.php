@@ -74,6 +74,11 @@ class Invoice extends Model
         return $this->hasOne(Report::class);
     }
 
+    public function scope(): HasOne
+    {
+        return $this->hasOne(Scope::class);
+    }
+
     public function recalculateTotals(): void
     {
         $this->subtotal = $this->lineItems()->sum('total');
