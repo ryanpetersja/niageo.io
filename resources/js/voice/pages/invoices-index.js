@@ -9,6 +9,7 @@ function currentFilters() {
         search: form?.elements.search?.value || '',
         status: form?.elements.status?.value || '',
         client_id: form?.elements.client_id?.value || '',
+        source: form?.elements.source?.value || '',
     };
 }
 
@@ -38,11 +39,12 @@ registerPage('invoices.index', {
             const form = filterForm();
             if (!form) return { error: "I couldn't find the filters on this screen." };
 
-            const next = input.clear ? { search: '', status: '', client_id: '' } : currentFilters();
+            const next = input.clear ? { search: '', status: '', client_id: '', source: '' } : currentFilters();
             if (!input.clear) {
                 if (input.search !== undefined) next.search = input.search;
                 if (input.status !== undefined) next.status = input.status;
                 if (input.client_id !== undefined) next.client_id = input.client_id ? String(input.client_id) : '';
+                if (input.source !== undefined) next.source = input.source;
             }
 
             setValue(form.elements.search, next.search);
@@ -51,6 +53,7 @@ registerPage('invoices.index', {
                 return { error: "I couldn't find that client in the filter list." };
             }
             if (!next.client_id) setValue(form.elements.client_id, '');
+            if (form.elements.source) setValue(form.elements.source, next.source || '');
 
             const params = new URLSearchParams();
             Object.entries(next).forEach(([key, value]) => { if (value) params.set(key, value); });

@@ -55,8 +55,13 @@
                                 <option value="{{ $c->id }}" {{ request('client_id') == $c->id ? 'selected' : '' }}>{{ $c->company_name }}</option>
                             @endforeach
                         </select>
+                        <select name="source" class="field" style="width:auto;">
+                            <option value="">All Sources</option>
+                            <option value="recurring" {{ request('source') === 'recurring' ? 'selected' : '' }}>Recurring</option>
+                            <option value="manual" {{ request('source') === 'manual' ? 'selected' : '' }}>Manual</option>
+                        </select>
                         <button type="submit" class="btn btn-secondary">Filter</button>
-                        @if(request()->hasAny(['search', 'status', 'client_id']))
+                        @if(request()->hasAny(['search', 'status', 'client_id', 'source']))
                             <a href="{{ route('invoices.index') }}" class="btn btn-ghost">Clear</a>
                         @endif
                     </form>
@@ -96,6 +101,9 @@
                                 <tr class="row-item" data-voice-invoice="{{ $inv->invoice_number }}" data-voice-url="{{ route('invoices.show', $inv) }}">
                                     <td class="px-4 py-3">
                                         <a href="{{ route('invoices.show', $inv) }}" class="accent-ink hover:underline font-medium">{{ $inv->invoice_number }}</a>
+                                        @if($inv->billing_plan_id)
+                                            <span class="badge badge-accent ml-1" style="font-size:.6rem;" title="Generated from a billing plan">Recurring</span>
+                                        @endif
                                         @if($inv->title)
                                             <div class="text-xs text-faint">{{ $inv->title }}</div>
                                         @endif

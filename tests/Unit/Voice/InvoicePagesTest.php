@@ -92,6 +92,8 @@ class InvoicePagesTest extends TestCase
             ['name' => 'set_field', 'input' => ['field' => 'colour', 'value' => 'red']],
             ['name' => 'remove_line_item', 'input' => []],
             ['name' => 'navigate', 'input' => ['to' => 'invoices']],
+            ['name' => 'adjust_prices', 'input' => ['percent' => '-15', 'lines' => ['1', '3']]],
+            ['name' => 'adjust_prices', 'input' => ['percent' => 10, 'lines' => 'all']],
             ['name' => 'launch_rockets', 'input' => []],
         ], $tools);
 
@@ -99,6 +101,7 @@ class InvoicePagesTest extends TestCase
             ['name' => 'update_line_item', 'input' => ['line' => 2, 'unit_price' => 250.0]],
             ['name' => 'set_field', 'input' => ['field' => 'title', 'value' => 'Hosting']],
             ['name' => 'navigate', 'input' => ['to' => 'invoices']],
+            ['name' => 'adjust_prices', 'input' => ['percent' => -15.0, 'lines' => [1, 3]]],
         ], $valid);
     }
 }

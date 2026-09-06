@@ -12,6 +12,7 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
+        $schedule->command('billing:generate')->dailyAt('06:00');
         $schedule->command('invoices:mark-overdue')->dailyAt('08:00');
         $schedule->command('subscriptions:refresh')->dailyAt('08:00');
         $schedule->command('uptime:check')->everyMinute();

@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\AiUsageController;
+use App\Http\Controllers\BillingPlanController;
 use App\Http\Controllers\BrandingSettingsController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\ClientRepositoryController;
@@ -10,6 +12,7 @@ use App\Http\Controllers\MonitoredEndpointController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PricingPresetController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ScopeController;
 use App\Http\Controllers\SubscriptionBillController;
@@ -38,6 +41,15 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/invoices/{invoice}/apply-preset', [InvoiceController::class, 'applyPreset'])->name('invoices.apply-preset');
     Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'pdf'])->name('invoices.pdf');
     Route::get('/invoices/{invoice}/pdf/download', [InvoiceController::class, 'downloadPdf'])->name('invoices.pdf.download');
+
+    // Billing plans (recurring invoices generated per period)
+    Route::post('/billing-plans/generate-due', [BillingPlanController::class, 'generateDue'])->name('billing-plans.generate-due');
+    Route::resource('billing-plans', BillingPlanController::class)->parameters(['billing-plans' => 'billingPlan']);
+    Route::post('/billing-plans/{billingPlan}/generate', [BillingPlanController::class, 'generate'])->name('billing-plans.generate');
+    Route::post('/billing-plans/{billingPlan}/status', [BillingPlanController::class, 'setStatus'])->name('billing-plans.status');
+
+    // Products (catalogue used by billing plans)
+    Route::resource('products', ProductController::class)->only(['index', 'store', 'update', 'destroy']);
 
     // Voice assistant (natural-language commands → UI actions)
     Route::post('/voice/interpret', [VoiceCommandController::class, 'interpret'])
@@ -109,6 +121,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/settings/branding', [BrandingSettingsController::class, 'edit'])->name('settings.branding');
         Route::put('/settings/branding', [BrandingSettingsController::class, 'update'])->name('settings.branding.update');
         Route::get('/settings/report-preferences', [ReportController::class, 'preferences'])->name('settings.report-preferences');
+        Route::get('/settings/ai-usage', [AiUsageController::class, 'index'])->name('settings.ai-usage');
+        Route::put('/settings/ai-usage/budget', [AiUsageController::class, 'updateBudget'])->name('settings.ai-usage.budget');
 
         Route::get('/logs', [LogController::class, 'index'])->name('logs.index');
         Route::get('/logs/download', [LogController::class, 'download'])->name('logs.download');

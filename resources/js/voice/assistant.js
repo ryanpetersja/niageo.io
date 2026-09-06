@@ -4,21 +4,42 @@ import { createRecognizer, recognitionSupported, speak, stopSpeaking, synthesisS
 import { csrfToken } from './dom';
 
 const STORAGE_KEY = 'niageo.voice';
+const PREFS_KEY = 'niageo.voice.prefs';
 const YES = /^\s*(yes|yeah|yep|yup|sure|confirm(ed)?|go ahead|do it|correct|ok(ay)?|affirmative|proceed|please do|absolutely)\b/i;
 const NO = /^\s*(no|nope|cancel|never ?mind|don'?t|do not|stop|abort|negative|forget it|leave it)\b/i;
+const PAUSE_OPTIONS = [2000, 3000, 5000, 8000];
+const DEFAULT_PAUSE_MS = 3000;
+const MAX_TASK_SCREENS = 8;
+
+function formatTokens(n) {
+    return n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, '')}k` : String(n);
+}
 
 function localDate() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+function loadPrefs() {
+    try {
+        return JSON.parse(localStorage.getItem(PREFS_KEY) || '{}') || {};
+    } catch (e) {
+        return {};
+    }
+}
+
 /**
  * Alpine component behind the floating voice widget.
  *
- * One turn = transcript → POST /voice/interpret → actions executed on the current
- * page adapter → spoken reply → listen again (conversation mode). State that must
- * survive page loads (mode, history, a reply/actions to resume after a navigation)
- * lives in sessionStorage.
+ * Listening: the microphone stays open through natural pauses. Speech accumulates
+ * and is only sent once the user has been quiet for `pauseMs` (a visible countdown),
+ * or when they tap "Send now" / the mic.
+ *
+ * One turn = transcript → POST /voice/interpret → actions on the current page →
+ * spoken reply → listen again. Multi-step requests that span screens are carried
+ * as a `task` (original request + the planner's note of what remains); after each
+ * navigation the widget resumes queued actions and asks the planner to continue.
+ * State that must survive page loads lives in sessionStorage.
  */
 export function voiceAssistant() {
     return {
@@ -27,13 +48,12 @@ export function voiceAssistant() {
         open: false,
         listening: false,
         status: 'idle', // idle | listening | thinking | speaking
-        interim: '',
         input: '',
         muted: false,
         showHelp: false,
         log: [],
         history: [],
-        pending: null,
+        pending: null, // confirmation awaiting yes/no: { actions, reply }
         page: null,
         routes: {},
         lang: 'en-US',
@@ -43,9 +63,34 @@ export function voiceAssistant() {
         recognizerActive: false,
         restartTimer: null,
         resumeState: null,
+        // patient listening
+        pauseMs: DEFAULT_PAUSE_MS,
+        pauseTimer: null,
+        pendingText: '', // finalised speech not yet sent
+        liveText: '', // words still being recognised
+        countdownKey: 0,
+        flushRequested: false,
+        // idle auto-off
+        idleMs: 15000,
+        idleTimer: null,
+        lastActivity: 0,
+        // usage
+        usage: { commands: 0, input: 0, output: 0, cached: 0 },
+        budget: null,
+        // multi-step request in progress
+        task: null, // { original, remaining, step, done: [] }
+        currentTranscript: '',
+        currentReply: '',
+
+        /* ---------- derived ---------- */
 
         get statusLabel() {
-            return { idle: this.supported ? 'Mic off' : 'Text only', listening: 'Listening…', thinking: 'Working…', speaking: 'Speaking' }[this.status] || '';
+            if (this.status === 'listening') return this.dictation ? 'Listening… pause to send' : 'Listening…';
+            return { idle: this.supported ? 'Mic off' : 'Text only', thinking: this.task ? 'Working through your request…' : 'Working…', speaking: 'Speaking' }[this.status] || '';
+        },
+
+        get dictation() {
+            return [this.pendingText, this.liveText].filter(Boolean).join(' ').trim();
         },
 
         get examples() {
@@ -60,6 +105,27 @@ export function voiceAssistant() {
             return 'Ctrl+Shift+Space';
         },
 
+        get pauseOptions() {
+            return PAUSE_OPTIONS;
+        },
+
+        get taskLabel() {
+            return this.task ? `Multi-step request · screen ${this.task.step + 1}` : '';
+        },
+
+        /** Session token summary shown under the input, e.g. "12 commands · 41k tokens · 78% cached". */
+        get usageLabel() {
+            const u = this.usage;
+            if (!u.commands) return '';
+            const promptTokens = u.input + u.cached;
+            const total = promptTokens + u.output;
+            const cachedPct = promptTokens ? Math.round((u.cached / promptTokens) * 100) : 0;
+            const budget = this.budget && this.budget.percent !== null ? ` · budget ${this.budget.percent}% used` : '';
+            return `${u.commands} command${u.commands === 1 ? '' : 's'} · ${formatTokens(total)} tokens · ${cachedPct}% cached${budget}`;
+        },
+
+        /* ---------- lifecycle ---------- */
+
         init() {
             // Livewire navigation can mount a new widget before the old one is torn down.
             this.instanceId = Date.now() + Math.random();
@@ -68,7 +134,15 @@ export function voiceAssistant() {
 
             this.routes = JSON.parse(this.$el.dataset.voiceRoutes || '{}');
             this.lang = this.$el.dataset.voiceLang || 'en-US';
+            this.idleMs = Math.max(0, Number(this.$el.dataset.voiceIdleSeconds ?? 15) || 0) * 1000;
+            const prefs = loadPrefs();
+            if (PAUSE_OPTIONS.includes(Number(prefs.pauseMs))) this.pauseMs = Number(prefs.pauseMs);
+
             const resume = this.restore();
+            // Docked by default on wide screens; the user's last choice wins afterwards.
+            this.open = typeof prefs.open === 'boolean' ? prefs.open : window.innerWidth >= 1280;
+            this.applyDock();
+            this.$watch('open', () => this.applyDock());
             this.page = currentPage();
 
             this.keyHandler = (event) => {
@@ -89,12 +163,25 @@ export function voiceAssistant() {
             this.teardown();
         },
 
+        setOpen(open) {
+            this.open = Boolean(open);
+            try { localStorage.setItem(PREFS_KEY, JSON.stringify({ ...loadPrefs(), open: this.open })); } catch (e) { /* ignore */ }
+        },
+
+        /** Push the page content aside while the panel is docked. */
+        applyDock() {
+            document.body.classList.toggle('voice-docked', this.open);
+        },
+
         teardown() {
             if (window.__voiceAssistant?.instanceId === this.instanceId) window.__voiceAssistant = null;
             window.removeEventListener('keydown', this.keyHandler);
             window.removeEventListener('beforeunload', this.unloadHandler);
+            clearTimeout(this.idleTimer);
+            clearTimeout(this.pauseTimer);
             this.persist();
             this.stopRecognizer();
+            document.body.classList.remove('voice-docked');
         },
 
         /* ---------- persistence across page loads ---------- */
@@ -102,11 +189,14 @@ export function voiceAssistant() {
         restore() {
             try {
                 const saved = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || '{}');
-                this.open = Boolean(saved.open);
                 this.listening = Boolean(saved.listening) && this.supported;
                 this.muted = Boolean(saved.muted);
                 this.history = Array.isArray(saved.history) ? saved.history : [];
                 this.log = Array.isArray(saved.log) ? saved.log : [];
+                this.task = saved.task && typeof saved.task === 'object' ? saved.task : null;
+                if (saved.usage && typeof saved.usage === 'object') {
+                    this.usage = { commands: 0, input: 0, output: 0, cached: 0, ...saved.usage };
+                }
                 return saved.resume || null;
             } catch (e) {
                 return null;
@@ -116,25 +206,39 @@ export function voiceAssistant() {
         persist() {
             try {
                 sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
-                    open: this.open,
                     listening: this.listening,
                     muted: this.muted,
                     history: this.history.slice(-10),
                     log: this.log.slice(-12),
                     resume: this.resumeState,
+                    usage: this.usage,
+                    task: this.task,
                 }));
             } catch (e) { /* storage unavailable */ }
         },
 
-        /** Finish a turn that triggered a page load: run queued actions, announce the outcome, listen again. */
+        setPause(ms) {
+            this.pauseMs = ms;
+            try { localStorage.setItem(PREFS_KEY, JSON.stringify({ ...loadPrefs(), pauseMs: ms })); } catch (e) { /* ignore */ }
+            if (this.dictation) this.armPauseTimer();
+        },
+
+        /** Finish a turn that triggered a page load: run queued actions, announce the outcome, then continue or listen. */
         async resume(resume) {
             if (!resume) {
-                if (this.listening) this.startRecognizer();
+                // A page opened by hand while a request was in progress: the request is abandoned.
+                if (this.task) {
+                    this.task = null;
+                    this.persist();
+                }
+                if (this.listening) {
+                    this.touchActivity();
+                    this.startRecognizer();
+                }
                 return;
             }
             this.resumeState = null;
             this.persist();
-            this.open = true;
             this.status = 'thinking';
 
             const outcome = await this.runActions(resume.actions || [], resume.reply);
@@ -147,11 +251,16 @@ export function voiceAssistant() {
                 message = flash.text + (outcome.error ? ' ' + outcome.error : '');
                 role = flash.type === 'error' ? 'system' : 'assistant';
             }
+            if (outcome.error || flash?.type === 'error') {
+                // Something went wrong mid-request: stop rather than carry on blindly.
+                this.task = null;
+                this.persist();
+            }
             if (message) {
                 this.addLog(role, message);
                 await this.say(message);
             }
-            this.afterTurn();
+            this.nextStep();
         },
 
         readFlash() {
@@ -164,8 +273,13 @@ export function voiceAssistant() {
 
         toggle() {
             if (!this.supported) {
-                this.open = true;
+                this.setOpen(true);
                 this.addLog('system', "Voice input isn't supported in this browser. Type your commands below.");
+                return;
+            }
+            // Tapping the mic while dictating means "I'm done, send it".
+            if (this.listening && this.dictation) {
+                this.sendNow();
                 return;
             }
             this.listening ? this.stopListening() : this.startListening();
@@ -173,9 +287,9 @@ export function voiceAssistant() {
 
         startListening() {
             this.listening = true;
-            this.open = true;
             this.status = 'listening';
             stopSpeaking();
+            this.touchActivity();
             this.startRecognizer();
             this.persist();
         },
@@ -183,6 +297,11 @@ export function voiceAssistant() {
         stopListening() {
             this.listening = false;
             this.status = 'idle';
+            clearTimeout(this.idleTimer);
+            clearTimeout(this.pauseTimer);
+            this.pendingText = '';
+            this.liveText = '';
+            this.flushRequested = false;
             this.stopRecognizer();
             stopSpeaking();
             this.persist();
@@ -193,10 +312,15 @@ export function voiceAssistant() {
             if (!this.recognizer) {
                 this.recognizer = createRecognizer({
                     lang: this.lang,
-                    onInterim: (text) => { this.interim = text; },
-                    onFinal: (text) => { this.interim = ''; this.send(text); },
+                    onInterim: (text) => this.handleSpeech({ interim: text }),
+                    onFinal: (text) => this.handleSpeech({ final: text }),
                     onEnd: () => {
                         this.recognizerActive = false;
+                        if (this.flushRequested) {
+                            this.flushRequested = false;
+                            this.flushTranscript();
+                            return;
+                        }
                         if (this.listening && this.status === 'listening') this.scheduleRestart();
                     },
                     onError: (error) => {
@@ -234,7 +358,87 @@ export function voiceAssistant() {
                 try { this.recognizer.abort(); } catch (e) { /* already stopped */ }
             }
             this.recognizerActive = false;
-            this.interim = '';
+            this.liveText = '';
+        },
+
+        /* ---------- patient listening: send after a pause, not mid-sentence ---------- */
+
+        handleSpeech({ interim, final }) {
+            if (this.status !== 'listening') return;
+            this.lastActivity = Date.now();
+            if (final) {
+                this.pendingText = `${this.pendingText} ${final}`.trim();
+                this.liveText = '';
+            }
+            if (interim !== undefined) this.liveText = interim;
+            this.armPauseTimer();
+        },
+
+        armPauseTimer() {
+            clearTimeout(this.pauseTimer);
+            this.countdownKey++;
+            this.pauseTimer = setTimeout(() => this.onPauseElapsed(), this.pauseMs);
+        },
+
+        onPauseElapsed() {
+            if (this.status !== 'listening') return;
+            if (this.pendingText) {
+                this.flushTranscript();
+                return;
+            }
+            if (this.liveText) {
+                // The browser has not finalised the last words yet: end the session to force it, then send.
+                this.flushRequested = true;
+                try {
+                    this.recognizer?.stop();
+                } catch (e) {
+                    this.flushRequested = false;
+                    this.flushTranscript();
+                }
+            }
+        },
+
+        flushTranscript() {
+            clearTimeout(this.pauseTimer);
+            const text = [this.pendingText, this.liveText].join(' ').trim();
+            this.pendingText = '';
+            this.liveText = '';
+            this.countdownKey++;
+            if (text) this.send(text);
+        },
+
+        sendNow() {
+            if (!this.dictation) return;
+            this.flushRequested = false;
+            this.flushTranscript();
+        },
+
+        /* ---------- idle auto-off ---------- */
+
+        touchActivity() {
+            this.lastActivity = Date.now();
+            this.armIdleTimer();
+        },
+
+        armIdleTimer() {
+            clearTimeout(this.idleTimer);
+            if (!this.idleMs || !this.listening) return;
+            const remaining = Math.max(250, this.idleMs - (Date.now() - this.lastActivity));
+            this.idleTimer = setTimeout(() => this.checkIdle(), remaining);
+        },
+
+        checkIdle() {
+            if (!this.listening || !this.idleMs) return;
+            if (this.status !== 'listening' || this.dictation) {
+                this.idleTimer = setTimeout(() => this.checkIdle(), 1000);
+                return;
+            }
+            if (Date.now() - this.lastActivity < this.idleMs) {
+                this.armIdleTimer();
+                return;
+            }
+            this.stopListening();
+            this.addLog('system', `Mic switched off after ${Math.round(this.idleMs / 1000)} seconds of silence. Tap the mic or press ${this.shortcutHint} to resume.`);
         },
 
         /* ---------- conversation ---------- */
@@ -245,26 +449,35 @@ export function voiceAssistant() {
             if (text) this.send(text);
         },
 
-        async send(rawText) {
+        /**
+         * Send one command. With `task`, this is the planner continuing a multi-step request
+         * on a new screen: the original request is resent with the note of what remains.
+         */
+        async send(rawText, { task = null } = {}) {
             const text = String(rawText || '').trim();
             if (!text || this.busy) return;
 
-            this.addLog('user', text);
-            this.showHelp = false;
+            if (!task) {
+                this.addLog('user', text);
+                this.showHelp = false;
 
-            if (this.pending) {
-                const pending = this.pending;
-                this.pending = null;
-                if (YES.test(text)) {
-                    await this.performTurn(pending.actions, pending.reply);
-                    return;
+                if (this.pending) {
+                    const pending = this.pending;
+                    this.pending = null;
+                    if (YES.test(text)) {
+                        await this.performTurn(pending.actions, pending.reply);
+                        return;
+                    }
+                    if (NO.test(text)) {
+                        this.task = null;
+                        this.addLog('assistant', 'Okay, cancelled.');
+                        await this.say('Okay, cancelled.');
+                        this.afterTurn();
+                        return;
+                    }
                 }
-                if (NO.test(text)) {
-                    this.addLog('assistant', 'Okay, cancelled.');
-                    await this.say('Okay, cancelled.');
-                    this.afterTurn();
-                    return;
-                }
+                // A fresh command replaces any request still in progress.
+                this.task = null;
             }
 
             this.busy = true;
@@ -272,6 +485,7 @@ export function voiceAssistant() {
             this.stopRecognizer();
             stopSpeaking();
             this.page = currentPage();
+            this.currentTranscript = text;
 
             let data;
             try {
@@ -288,12 +502,14 @@ export function voiceAssistant() {
                         transcript: text,
                         page: { name: this.page.name, context: this.page.context(), today: localDate() },
                         history: this.history.slice(-10),
+                        task: task ? { original: task.original, remaining: task.remaining, step: task.step, done: task.done } : null,
                     }),
                 });
                 data = await response.json().catch(() => ({}));
                 if (!response.ok) throw new Error(data.reply || data.message || `Request failed (${response.status})`);
             } catch (error) {
                 this.busy = false;
+                this.task = null;
                 const message = error.message || 'Something went wrong.';
                 this.addLog('system', message);
                 await this.say(message);
@@ -302,18 +518,45 @@ export function voiceAssistant() {
             }
             this.busy = false;
 
-            this.pushHistory('user', text);
+            // The request was cancelled while the planner was thinking.
+            if (task && this.task !== task) {
+                this.afterTurn();
+                return;
+            }
+
+            this.recordUsage(data.usage);
+            if (data.budget !== undefined) this.budget = data.budget;
+            this.pushHistory('user', task ? `(continuing on ${this.pageLabel}: ${task.remaining})` : text);
             this.pushHistory('assistant', (data.reply || '') + this.summarize(data.actions));
 
+            const actions = data.actions || [];
+            const continues = actions.some((a) => a.name === 'continue_task');
+            const progress = actions.some((a) => a.name !== 'continue_task');
+
+            // A response without continue_task means the request is complete (or was never multi-step).
+            if (!continues) {
+                this.task = null;
+                this.persist();
+            } else if (task && !progress) {
+                // The planner only re-noted what remains without doing anything: stop rather than loop.
+                this.task = null;
+                this.persist();
+                const message = data.reply || "I couldn't make progress on the rest of that request.";
+                this.addLog('system', message);
+                await this.say(message);
+                this.afterTurn();
+                return;
+            }
+
             if (data.confirm?.prompt) {
-                this.pending = { actions: data.actions || [], reply: data.reply || 'Done.' };
+                this.pending = { actions, reply: data.reply || 'Done.' };
                 this.addLog('assistant', data.confirm.prompt);
                 await this.say(data.confirm.prompt);
                 this.afterTurn();
                 return;
             }
 
-            await this.performTurn(data.actions || [], data.reply || 'Done.');
+            await this.performTurn(actions, data.reply || 'Done.');
         },
 
         /** Execute actions, then speak the outcome (unless a page load will do it after reload). */
@@ -321,6 +564,7 @@ export function voiceAssistant() {
             this.busy = true;
             this.status = 'thinking';
             this.stopRecognizer();
+            this.currentReply = reply;
             const outcome = await this.runActions(actions, reply);
             this.busy = false;
             if (outcome.navigated) {
@@ -329,15 +573,19 @@ export function voiceAssistant() {
                     if (this.resumeState) {
                         this.resumeState = null;
                         this.persist();
-                        this.afterTurn();
+                        this.nextStep();
                     }
                 }, 8000);
                 return;
             }
+            if (outcome.error) {
+                this.task = null;
+                this.persist();
+            }
             const message = outcome.error || reply;
             this.addLog(outcome.error ? 'system' : 'assistant', message);
             await this.say(message);
-            this.afterTurn();
+            this.nextStep();
         },
 
         async runActions(actions, reply) {
@@ -363,6 +611,58 @@ export function voiceAssistant() {
             return { done: true };
         },
 
+        /* ---------- multi-step requests ---------- */
+
+        /** Called by the continue_task action: remember what remains for the next screen. */
+        noteContinuation({ remaining, done }) {
+            const previous = this.task;
+            this.task = {
+                original: previous?.original || this.currentTranscript,
+                remaining: String(remaining || ''),
+                step: (previous?.step || 0) + 1,
+                done: [...(previous?.done || []), done || this.currentReply].filter(Boolean).slice(-10),
+            };
+            this.persist();
+        },
+
+        /** After a turn finishes on this screen: continue the request here, or go back to listening. */
+        nextStep() {
+            if (this.task && !this.pending) {
+                this.continueTask();
+                return;
+            }
+            this.afterTurn();
+        },
+
+        async continueTask() {
+            const task = this.task;
+            if (!task) {
+                this.afterTurn();
+                return;
+            }
+            if (task.step >= MAX_TASK_SCREENS) {
+                this.task = null;
+                this.persist();
+                const message = `I stopped after ${MAX_TASK_SCREENS} screens. Tell me what to do next.`;
+                this.addLog('system', message);
+                await this.say(message);
+                this.afterTurn();
+                return;
+            }
+            this.addLog('system', `Continuing: ${task.remaining}`);
+            await this.send(task.original, { task });
+        },
+
+        cancelTask() {
+            this.task = null;
+            this.pending = null;
+            this.persist();
+            this.addLog('system', 'Cancelled the multi-step request.');
+            if (!this.busy) this.afterTurn();
+        },
+
+        /* ---------- output ---------- */
+
         async say(text) {
             if (!text || this.muted || !this.canSpeak) return;
             this.status = 'speaking';
@@ -377,7 +677,20 @@ export function voiceAssistant() {
                 return;
             }
             this.status = this.listening ? 'listening' : 'idle';
-            if (this.listening) this.startRecognizer();
+            if (this.listening) {
+                this.touchActivity();
+                this.startRecognizer();
+            }
+        },
+
+        recordUsage(usage) {
+            if (!usage || typeof usage !== 'object') return;
+            this.usage.commands += 1;
+            // Cache writes are billed at full price or more, so they count as uncached input.
+            this.usage.input += Number(usage.input || 0) + Number(usage.cache_write || 0);
+            this.usage.cached += Number(usage.cache_read || 0);
+            this.usage.output += Number(usage.output || 0);
+            this.persist();
         },
 
         summarize(actions) {
@@ -402,6 +715,8 @@ export function voiceAssistant() {
             this.log = [];
             this.history = [];
             this.pending = null;
+            this.task = null;
+            this.usage = { commands: 0, input: 0, output: 0, cached: 0 };
             this.persist();
         },
 

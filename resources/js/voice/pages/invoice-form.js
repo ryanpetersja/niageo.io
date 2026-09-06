@@ -29,6 +29,7 @@ registerPage('invoices.form', {
         'Add a line for website hosting, 12 months at 45 dollars',
         'Change the quantity on line 2 to 3',
         'Change the hosting line to 250',
+        'Reduce every item by 15 percent',
         'Remove the last line item',
         'Set the tax rate to 15 percent',
         'Save the invoice',
@@ -117,6 +118,23 @@ registerPage('invoices.form', {
             }
             if (unit_price !== undefined) item.unit_price = Math.max(0, Number(unit_price) || 0);
             highlightLine(Number(line));
+            return {};
+        },
+
+        adjust_prices({ percent, lines }) {
+            const data = formData();
+            if (!data) return { error: "The line item editor isn't ready." };
+            const factor = 1 + (Number(percent) || 0) / 100;
+            if (!(factor > 0)) return { error: 'That percentage would make the prices zero or negative.' };
+            const targets = Array.isArray(lines) && lines.length ? lines.map(Number) : data.lineItems.map((_, i) => i + 1);
+            for (const line of targets) {
+                if (!data.lineItems[line - 1]) return { error: `There is no line ${line} on this invoice.` };
+            }
+            targets.forEach((line) => {
+                const item = data.lineItems[line - 1];
+                item.unit_price = Math.round((Number(item.unit_price) || 0) * factor * 100) / 100;
+                highlightLine(line);
+            });
             return {};
         },
 

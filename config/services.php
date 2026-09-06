@@ -42,6 +42,8 @@ return [
         // leave ANTHROPIC_VOICE_EFFORT empty for models without effort control (e.g. Haiku 4.5).
         'voice_model' => env('ANTHROPIC_VOICE_MODEL', 'claude-opus-5'),
         'voice_effort' => env('ANTHROPIC_VOICE_EFFORT', 'low'),
+        // Seconds of silence before the microphone switches itself off (0 = never).
+        'voice_idle_seconds' => (int) env('ANTHROPIC_VOICE_IDLE_SECONDS', 15),
     ],
 
 ];

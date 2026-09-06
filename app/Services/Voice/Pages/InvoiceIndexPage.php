@@ -33,6 +33,7 @@ class InvoiceIndexPage implements PageCapability
                     'search' => Tool::string('Text to search for in invoice numbers and client names. Empty string clears the search box.'),
                     'status' => Tool::string('Invoice status to show. Empty string shows all statuses.', array_merge([''], self::STATUSES)),
                     'client_id' => Tool::integer('Client id taken from the CURRENT SCREEN client list. 0 shows all clients.'),
+                    'source' => Tool::string('recurring shows only invoices generated from billing plans, manual shows only hand-made invoices, empty string shows both.', ['', 'recurring', 'manual']),
                     'clear' => Tool::boolean('true to remove all filters.'),
                 ]
             ),
@@ -78,11 +79,13 @@ class InvoiceIndexPage implements PageCapability
         $status = Screen::text($filters['status'] ?? '', 20);
         $lines = [];
         $lines[] = 'Screen: Invoice list — a filterable table of invoices.';
+        $source = Screen::text($filters['source'] ?? '', 20);
         $lines[] = sprintf(
-            'Current filters: search=%s; status=%s; client=%s.',
+            'Current filters: search=%s; status=%s; client=%s; source=%s.',
             Screen::quoted($filters['search'] ?? '', 80),
             $status === '' ? '(all statuses)' : $status,
-            $clientName
+            $clientName,
+            $source === '' ? '(recurring and manual)' : $source
         );
         $lines[] = 'Statuses: ' . implode(', ', self::STATUSES) . '.';
         $lines[] = 'Clients available for filtering (id: name): ' . ($clients === []

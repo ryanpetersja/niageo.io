@@ -15,13 +15,18 @@ export function globalActions(assistant) {
         },
 
         show_help() {
-            assistant.open = true;
+            assistant.setOpen(true);
             assistant.showHelp = true;
             return {};
         },
 
         stop_listening() {
             assistant.stopAfterReply = true;
+            return {};
+        },
+
+        continue_task(input) {
+            assistant.noteContinuation(input || {});
             return {};
         },
     };

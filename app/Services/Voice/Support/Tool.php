@@ -50,4 +50,9 @@ final class Tool
     {
         return ['type' => 'boolean', 'description' => $description];
     }
+
+    public static function integerList(string $description): array
+    {
+        return ['type' => 'array', 'items' => ['type' => 'integer'], 'description' => $description];
+    }
 }

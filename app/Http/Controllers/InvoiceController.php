@@ -36,6 +36,12 @@ class InvoiceController extends Controller
             $query->where('client_id', $clientId);
         }
 
+        if ($request->input('source') === 'recurring') {
+            $query->whereNotNull('billing_plan_id');
+        } elseif ($request->input('source') === 'manual') {
+            $query->whereNull('billing_plan_id');
+        }
+
         // Compute summary totals from the filtered query (before pagination)
         $summary = (clone $query)->selectRaw('
             COUNT(*) as total_count,
@@ -238,6 +244,12 @@ class InvoiceController extends Controller
 
         if ($clientId = $request->input('client_id')) {
             $query->where('client_id', $clientId);
+        }
+
+        if ($request->input('source') === 'recurring') {
+            $query->whereNotNull('billing_plan_id');
+        } elseif ($request->input('source') === 'manual') {
+            $query->whereNull('billing_plan_id');
         }
 
         $invoices = $query->orderBy('created_at', 'desc')->get();

@@ -73,6 +73,11 @@ class Client extends Model
         return $this->hasMany(Scope::class);
     }
 
+    public function billingPlans(): HasMany
+    {
+        return $this->hasMany(BillingPlan::class)->orderBy('name');
+    }
+
     public function getOutstandingBalanceAttribute(): float
     {
         return (float) $this->invoices()

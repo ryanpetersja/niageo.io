@@ -93,7 +93,10 @@ class VoiceCommandTest extends TestCase
             ->assertJsonCount(1, 'actions')
             ->assertJsonPath('actions.0.name', 'set_filters')
             ->assertJsonPath('actions.0.input.status', 'overdue')
-            ->assertJsonPath('actions.0.input.client_id', 2);
+            ->assertJsonPath('actions.0.input.client_id', 2)
+            ->assertJsonPath('usage.input', 10)
+            ->assertJsonPath('usage.output', 5)
+            ->assertJsonPath('usage.cache_read', 0);
 
         Http::assertSent(function ($request) {
             $body = $request->data();
@@ -108,6 +111,7 @@ class VoiceCommandTest extends TestCase
                 && in_array('set_filters', $toolNames, true)
                 && in_array('open_invoice', $toolNames, true)
                 && in_array('navigate', $toolNames, true)
+                && in_array('continue_task', $toolNames, true)
                 && count($body['messages']) === 3
                 && $body['messages'][0]['role'] === 'user'
                 && str_contains($lastMessage['content'], 'Today: Sunday, 6 September 2026 (2026-09-06)')
@@ -168,7 +172,44 @@ class VoiceCommandTest extends TestCase
             $toolNames = array_column($request->data()['tools'], 'name');
             sort($toolNames);
 
-            return $toolNames === ['navigate', 'show_help', 'stop_listening'];
+            return $toolNames === ['continue_task', 'navigate', 'show_help', 'stop_listening'];
+        });
+    }
+
+    public function test_multi_step_tasks_are_continued_on_the_next_screen(): void
+    {
+        Config::set('services.anthropic.api_key', 'sk-test');
+
+        Http::fake([
+            'api.anthropic.com/*' => Http::response($this->claudeResponse([
+                ['type' => 'text', 'text' => 'Reduced every price by 15 percent and saved; heading back to the list.'],
+                ['type' => 'tool_use', 'id' => 'toolu_1', 'name' => 'adjust_prices', 'input' => ['percent' => -15, 'lines' => ['1', 2]]],
+                ['type' => 'tool_use', 'id' => 'toolu_2', 'name' => 'save_invoice', 'input' => []],
+                ['type' => 'tool_use', 'id' => 'toolu_3', 'name' => 'continue_task', 'input' => ['remaining' => 'go to the invoices list and filter by client Acme Corp', 'done' => 'Cut prices by 15% and saved']],
+            ])),
+        ]);
+
+        $response = $this->actingAs($this->user())->postJson(route('voice.interpret'), [
+            'transcript' => 'open that invoice, cut every price by fifteen percent, save it, then go back and show only acme',
+            'page' => ['name' => 'invoices.form', 'context' => ['mode' => 'edit', 'invoice_number' => 'INV-1', 'line_items' => [['line' => 1, 'description' => 'Hosting', 'quantity' => 1, 'unit_price' => 100]]]],
+            'task' => ['original' => 'open that invoice, cut every price by fifteen percent, save it, then go back and show only acme', 'remaining' => 'reduce every line by 15%, save, then filter the list by Acme', 'step' => 2, 'done' => ['Opened invoice INV-1']],
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('actions.0.name', 'adjust_prices')
+            ->assertJsonPath('actions.0.input.percent', -15)
+            ->assertJsonPath('actions.0.input.lines', [1, 2])
+            ->assertJsonPath('actions.1.name', 'save_invoice')
+            ->assertJsonPath('actions.2.name', 'continue_task')
+            ->assertJsonPath('actions.2.input.remaining', 'go to the invoices list and filter by client Acme Corp');
+
+        Http::assertSent(function ($request) {
+            $content = end($request->data()['messages'])['content'];
+
+            return str_contains($content, 'CONTINUING A MULTI-STEP REQUEST (screen 3)')
+                && str_contains($content, 'Done so far: 1. Opened invoice INV-1')
+                && str_contains($content, 'Your note of what remains: "reduce every line by 15%, save, then filter the list by Acme"')
+                && ! str_contains($content, 'USER SAID');
         });
     }
 

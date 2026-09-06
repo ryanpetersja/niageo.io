@@ -67,6 +67,15 @@ class InvoiceFormPage implements PageCapability
                 ['line']
             ),
             Tool::make(
+                'adjust_prices',
+                $p . 'Change unit prices by a percentage in one go: every line item, or only the given lines. Call this for "reduce each item by 15%", "increase all prices by 10%", "give a 20% discount on the hosting line" (negative percent lowers prices). Prices are rounded to cents.',
+                [
+                    'percent' => Tool::number('Percentage change: -15 reduces prices by 15%, 10 raises them by 10%.'),
+                    'lines' => Tool::integerList('1-based line numbers from the CURRENT SCREEN to change; omit to change every line.'),
+                ],
+                ['percent']
+            ),
+            Tool::make(
                 'remove_line_item',
                 $p . 'Remove a line item from the invoice. Call this when the user wants to delete, remove or drop a line. Identify it by its number from the CURRENT SCREEN line item list.',
                 ['line' => Tool::integer('1-based line number from the CURRENT SCREEN line item list.')],
@@ -168,6 +177,7 @@ class InvoiceFormPage implements PageCapability
             'Add a line for website hosting, 12 months at 45 dollars',
             'Change the quantity on line 2 to 3',
             'Change the hosting line to 250',
+            'Reduce every item by 15 percent',
             'Remove the last line item',
             'Set the tax rate to 15 percent',
             'Save the invoice',

@@ -2,11 +2,14 @@
 
 namespace App\Services;
 
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class ClaudeService
 {
+    private const ENDPOINT = 'https://api.anthropic.com/v1/messages';
+
     public function distillFeedback(array $feedbackTexts, array $currentRules): array
     {
         $apiKey = config('services.anthropic.api_key');
@@ -48,11 +51,7 @@ Return the updated rules as a JSON array of strings:
 ["rule 1", "rule 2", ...]
 PROMPT;
 
-        $response = Http::withHeaders([
-            'x-api-key' => $apiKey,
-            'anthropic-version' => '2023-06-01',
-            'Content-Type' => 'application/json',
-        ])->timeout(60)->post('https://api.anthropic.com/v1/messages', [
+        $response = $this->post('feedback_rules', [
             'model' => $model,
             'max_tokens' => 2048,
             'system' => $systemPrompt,
@@ -162,11 +161,7 @@ Respond with JSON in this exact format:
 {"features":["..."],"bugs":["..."],"improvements":["..."],"security":["..."],"infrastructure":["..."],"commit_refs":{"features":[["sha1","sha2"],["sha3"]],"bugs":[["sha4"]],"improvements":[],"security":[],"infrastructure":[]}}
 PROMPT;
 
-        $response = Http::withHeaders([
-            'x-api-key' => $apiKey,
-            'anthropic-version' => '2023-06-01',
-            'Content-Type' => 'application/json',
-        ])->timeout(60)->post('https://api.anthropic.com/v1/messages', [
+        $response = $this->post('report_summary', [
             'model' => $model,
             'max_tokens' => 4096,
             'system' => $systemPrompt,
@@ -263,11 +258,7 @@ PROMPT;
         $userPrompt .= "User feedback:\n{$feedback}\n\n";
         $userPrompt .= "Return the revised summary as JSON (include commit_refs if present in the input):\n{\"features\":[...],\"bugs\":[...],\"improvements\":[...],\"security\":[...],\"infrastructure\":[...],\"commit_refs\":{\"features\":[[...],...],\"bugs\":[[...],...],\"improvements\":[...],\"security\":[...],\"infrastructure\":[...]}}";
 
-        $response = Http::withHeaders([
-            'x-api-key' => $apiKey,
-            'anthropic-version' => '2023-06-01',
-            'Content-Type' => 'application/json',
-        ])->timeout(60)->post('https://api.anthropic.com/v1/messages', [
+        $response = $this->post('report_revision', [
             'model' => $model,
             'max_tokens' => 4096,
             'system' => $systemPrompt,
@@ -386,11 +377,7 @@ Respond with JSON in this exact format:
 {"features":["..."],"bugs":["..."],"improvements":["..."],"security":["..."],"infrastructure":["..."]}
 PROMPT;
 
-        $response = Http::withHeaders([
-            'x-api-key' => $apiKey,
-            'anthropic-version' => '2023-06-01',
-            'Content-Type' => 'application/json',
-        ])->timeout(60)->post('https://api.anthropic.com/v1/messages', [
+        $response = $this->post('server_summary', [
             'model' => $model,
             'max_tokens' => 4096,
             'system' => $systemPrompt,
@@ -464,16 +451,12 @@ PROMPT;
 
         $userPrompt = "Project: {$projectTitle}\nClient: {$clientName}\n\nDescription:\n{$description}";
 
-        $response = Http::withHeaders([
-            'x-api-key' => $apiKey,
-            'anthropic-version' => '2023-06-01',
-            'Content-Type' => 'application/json',
-        ])->timeout(120)->post('https://api.anthropic.com/v1/messages', [
+        $response = $this->post('scope_sections', [
             'model' => $model,
             'max_tokens' => 8192,
             'system' => $systemPrompt,
             'messages' => [['role' => 'user', 'content' => $userPrompt]],
-        ]);
+        ], 120);
 
         if ($response->failed()) {
             Log::error('Claude API failed (scope sections)', ['status' => $response->status(), 'body' => $response->body()]);
@@ -555,16 +538,12 @@ PROMPT;
             }
         }
 
-        $response = Http::withHeaders([
-            'x-api-key' => $apiKey,
-            'anthropic-version' => '2023-06-01',
-            'Content-Type' => 'application/json',
-        ])->timeout(120)->post('https://api.anthropic.com/v1/messages', [
+        $response = $this->post('scope_items', [
             'model' => $model,
             'max_tokens' => 8192,
             'system' => $systemPrompt,
             'messages' => [['role' => 'user', 'content' => $userPrompt]],
-        ]);
+        ], 120);
 
         if ($response->failed()) {
             Log::error('Claude API failed (scope items)', ['status' => $response->status(), 'body' => $response->body()]);
@@ -645,11 +624,7 @@ PROMPT;
 
         $userPrompt = "Project: {$projectTitle}\nClient: {$clientName}\n\nSection: {$sectionLabel}\n\nCurrent content:\n{$currentContent}\n\nInstruction: {$instruction}";
 
-        $response = Http::withHeaders([
-            'x-api-key' => $apiKey,
-            'anthropic-version' => '2023-06-01',
-            'Content-Type' => 'application/json',
-        ])->timeout(60)->post('https://api.anthropic.com/v1/messages', [
+        $response = $this->post('scope_refine', [
             'model' => $model,
             'max_tokens' => 4096,
             'system' => $systemPrompt,
@@ -670,22 +645,12 @@ PROMPT;
      *
      * @throws \RuntimeException when the API key is missing or the request fails
      */
-    public function send(array $payload, int $timeoutSeconds = 60, string $context = 'messages'): array
+    public function send(array $payload, int $timeoutSeconds = 60, string $feature = 'messages'): array
     {
-        $apiKey = config('services.anthropic.api_key');
-
-        if (empty($apiKey)) {
-            throw new \RuntimeException('Anthropic API key is not configured.');
-        }
-
-        $response = Http::withHeaders([
-            'x-api-key' => $apiKey,
-            'anthropic-version' => '2023-06-01',
-            'Content-Type' => 'application/json',
-        ])->timeout($timeoutSeconds)->post('https://api.anthropic.com/v1/messages', $payload);
+        $response = $this->post($feature, $payload, $timeoutSeconds);
 
         if (! $response->successful()) {
-            Log::error("Claude API failed ({$context})", [
+            Log::error("Claude API failed ({$feature})", [
                 'status' => $response->status(),
                 'body' => $response->body(),
             ]);
@@ -693,5 +658,37 @@ PROMPT;
         }
 
         return $response->json() ?? [];
+    }
+
+    /**
+     * Every Claude call goes through here so usage is recorded and the spend budget enforced.
+     *
+     * @throws \RuntimeException when the API key is missing or the budget has paused AI features
+     */
+    protected function post(string $feature, array $payload, int $timeoutSeconds = 60): Response
+    {
+        $apiKey = config('services.anthropic.api_key');
+
+        if (empty($apiKey)) {
+            throw new \RuntimeException('Anthropic API key is not configured.');
+        }
+
+        $usage = app(AiUsageService::class);
+        if ($usage->isBlocked($feature)) {
+            throw new \RuntimeException('AI features are paused because the monthly AI budget has been reached. Raise the budget under Settings → AI Usage to continue.');
+        }
+
+        $started = microtime(true);
+        $response = Http::withHeaders([
+            'x-api-key' => $apiKey,
+            'anthropic-version' => '2023-06-01',
+            'Content-Type' => 'application/json',
+        ])->timeout($timeoutSeconds)->post(self::ENDPOINT, $payload);
+
+        if ($response->successful()) {
+            $usage->record($feature, $payload['model'] ?? null, $response->json() ?? [], (int) round((microtime(true) - $started) * 1000));
+        }
+
+        return $response;
     }
 }

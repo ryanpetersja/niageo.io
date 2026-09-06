@@ -57,6 +57,11 @@
                             <div>
                                 <h3 class="text-lg font-semibold text-white">{{ $invoice->client->company_name }}</h3>
                                 <div class="text-sm text-muted mt-1">Created by {{ $invoice->creator->name }} on {{ $invoice->created_at->format('M d, Y') }}</div>
+                                @if($invoice->billingPlan)
+                                    <div class="text-sm text-muted mt-1">
+                                        Generated from billing plan <a href="{{ route('billing-plans.show', $invoice->billingPlan) }}" class="accent-ink hover:underline">{{ $invoice->billingPlan->name }}</a>@if($invoice->period_start && $invoice->period_end) · billing period {{ $invoice->period_start->format('M d') }} – {{ $invoice->period_end->format('M d, Y') }}@endif
+                                    </div>
+                                @endif
                             </div>
                             <span class="badge {{ $statusBadge[$invoice->status] ?? 'badge-gray' }}" style="font-size:.75rem; padding:.3rem .7rem;">{{ ucfirst($invoice->status) }}</span>
                         </div>

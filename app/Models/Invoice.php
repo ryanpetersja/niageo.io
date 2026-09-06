@@ -28,6 +28,9 @@ class Invoice extends Model
         'notes',
         'internal_notes',
         'pricing_preset_id',
+        'billing_plan_id',
+        'period_start',
+        'period_end',
     ];
 
     protected $casts = [
@@ -38,6 +41,8 @@ class Invoice extends Model
         'tax_amount' => 'decimal:2',
         'total' => 'decimal:2',
         'amount_paid' => 'decimal:2',
+        'period_start' => 'date',
+        'period_end' => 'date',
     ];
 
     public function client(): BelongsTo
@@ -68,6 +73,16 @@ class Invoice extends Model
     public function pricingPreset(): BelongsTo
     {
         return $this->belongsTo(PricingPreset::class);
+    }
+
+    public function billingPlan(): BelongsTo
+    {
+        return $this->belongsTo(BillingPlan::class);
+    }
+
+    public function getIsRecurringAttribute(): bool
+    {
+        return $this->billing_plan_id !== null;
     }
 
     public function report(): HasOne

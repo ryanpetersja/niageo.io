@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
             BrandingSettingsSeeder::class,
             ClientSeeder::class,
             PricingPresetSeeder::class,
+            ProductSeeder::class,
             InvoiceSeeder::class,
             ClientServiceSeeder::class,
             ClientRepositorySeeder::class,

@@ -14,7 +14,8 @@ export function createRecognizer({ lang = 'en-US', onInterim, onFinal, onEnd, on
     const recognizer = new Recognition();
     recognizer.lang = lang;
     recognizer.interimResults = true;
-    recognizer.continuous = false;
+    // Continuous: the session survives the user's natural pauses; the widget decides when a command is complete.
+    recognizer.continuous = true;
     recognizer.maxAlternatives = 1;
 
     recognizer.onresult = (event) => {

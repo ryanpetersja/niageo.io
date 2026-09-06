@@ -342,6 +342,30 @@
                 </div>
             </div>
 
+            <!-- Billing Plans -->
+            <div class="mt-6 card p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-white">Billing Plans</h3>
+                    <a href="{{ route('billing-plans.create', ['client_id' => $client->id]) }}" class="text-sm accent-ink hover:underline">+ New plan</a>
+                </div>
+                @if($client->billingPlans->isEmpty())
+                    <p class="text-slate-400 text-sm">No recurring billing plan yet. Create one to generate this client's invoices automatically each period.</p>
+                @else
+                    <div class="divide-hair">
+                        @foreach($client->billingPlans as $plan)
+                            <div class="py-3 flex justify-between items-center gap-3 text-sm">
+                                <div>
+                                    <a href="{{ route('billing-plans.show', $plan) }}" class="accent-ink hover:underline font-medium">{{ $plan->name }}</a>
+                                    <span class="badge {{ ['active' => 'badge-good', 'paused' => 'badge-warn', 'ended' => 'badge-gray'][$plan->status] ?? 'badge-gray' }} ml-2">{{ ucfirst($plan->status) }}</span>
+                                    <div class="text-xs text-slate-400 mt-0.5">{{ $plan->cycle_label }} · next period {{ $plan->next_period_start ? $plan->next_period_start->format('M d, Y') : '—' }}</div>
+                                </div>
+                                <div class="text-slate-200 font-medium">${{ number_format($plan->period_total, 2) }} <span class="text-xs text-slate-400 font-normal">/ period</span></div>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+
             <!-- Services -->
             <div class="mt-6 card p-6" x-data="serviceManager()">
                 <div class="flex justify-between items-center mb-4">
