@@ -3,6 +3,7 @@
 use App\Http\Controllers\BrandingSettingsController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\ClientRepositoryController;
+use App\Http\Controllers\LogController;
 use App\Http\Controllers\ClientServerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MonitoredEndpointController;
@@ -102,6 +103,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/settings/branding', [BrandingSettingsController::class, 'edit'])->name('settings.branding');
         Route::put('/settings/branding', [BrandingSettingsController::class, 'update'])->name('settings.branding.update');
         Route::get('/settings/report-preferences', [ReportController::class, 'preferences'])->name('settings.report-preferences');
+
+        Route::get('/logs', [LogController::class, 'index'])->name('logs.index');
+        Route::get('/logs/download', [LogController::class, 'download'])->name('logs.download');
+        Route::post('/logs/clear', [LogController::class, 'clear'])->name('logs.clear');
     });
 
     Route::middleware(['can:manage-users'])->group(function () {
