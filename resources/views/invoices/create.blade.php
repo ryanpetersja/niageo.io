@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-app-layout voice-page="invoices.form">
     <x-slot name="header">
         <x-breadcrumbs :items="[['label' => 'Invoices', 'url' => route('invoices.index')], ['label' => 'New Invoice']]" />
         <h2 class="font-semibold text-xl text-white leading-tight">Create Invoice</h2>
@@ -11,7 +11,7 @@
             @endif
 
             <div class="card p-6" x-data="invoiceForm()">
-                <form method="POST" action="{{ route('invoices.store') }}" @submit="prepareSubmit">
+                <form method="POST" action="{{ route('invoices.store') }}" data-voice-form="invoice" @submit="prepareSubmit">
                     @csrf
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                         <div>
@@ -47,7 +47,7 @@
                     <h3 class="text-base font-semibold text-white mb-4">Line Items</h3>
                     <div class="space-y-3 mb-4">
                         <template x-for="(item, index) in lineItems" :key="index">
-                            <div class="flex gap-3 items-center">
+                            <div class="flex gap-3 items-center" data-voice-line>
                                 <div class="flex-1">
                                     <input type="text" x-model="item.description" :name="'line_items['+index+'][description]'" placeholder="Description" class="field text-sm" required>
                                 </div>
@@ -86,7 +86,7 @@
                     </div>
 
                     <div class="flex justify-end gap-3">
-                        <a href="{{ route('invoices.index') }}" class="btn btn-secondary">Cancel</a>
+                        <a href="{{ route('invoices.index') }}" data-voice-action="cancel" class="btn btn-secondary">Cancel</a>
                         <x-primary-button>Create Invoice</x-primary-button>
                     </div>
                 </form>
@@ -107,4 +107,8 @@
             }
         }
     </script>
+    @php
+        $voiceContext = ['mode' => 'create', 'presets' => []];
+    @endphp
+    <script type="application/json" id="voice-context">@json($voiceContext)</script>
 </x-app-layout>

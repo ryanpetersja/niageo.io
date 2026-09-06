@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-app-layout voice-page="invoices.form">
     <x-slot name="header">
         <x-breadcrumbs :items="[['label' => 'Invoices', 'url' => route('invoices.index')], ['label' => $invoice->invoice_number, 'url' => route('invoices.show', $invoice)], ['label' => 'Edit']]" />
         <h2 class="font-semibold text-xl text-white leading-tight">Edit Invoice: {{ $invoice->invoice_number }}</h2>
@@ -16,7 +16,7 @@
             <!-- Apply Preset -->
             @if($invoice->client->pricingPresets->count() > 0)
                 <div class="card p-4 mb-6">
-                    <form method="POST" action="{{ route('invoices.apply-preset', $invoice) }}" class="flex items-center gap-4">
+                    <form method="POST" action="{{ route('invoices.apply-preset', $invoice) }}" data-voice-form="preset" class="flex items-center gap-4">
                         @csrf
                         <span class="text-sm font-medium text-muted">Apply Pricing Preset:</span>
                         <select name="pricing_preset_id" class="field text-sm" style="width:auto;">
@@ -30,7 +30,7 @@
             @endif
 
             <div class="card p-6" x-data="invoiceForm()">
-                <form method="POST" action="{{ route('invoices.update', $invoice) }}">
+                <form method="POST" action="{{ route('invoices.update', $invoice) }}" data-voice-form="invoice">
                     @csrf @method('PUT')
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                         <div>
@@ -63,7 +63,7 @@
                     <h3 class="text-base font-semibold text-white mb-4">Line Items</h3>
                     <div class="space-y-3 mb-4">
                         <template x-for="(item, index) in lineItems" :key="index">
-                            <div class="flex gap-3 items-center">
+                            <div class="flex gap-3 items-center" data-voice-line>
                                 <div class="flex-1">
                                     <input type="text" x-model="item.description" :name="'line_items['+index+'][description]'" placeholder="Description" class="field text-sm" required>
                                 </div>
@@ -102,7 +102,7 @@
                     </div>
 
                     <div class="flex justify-end gap-3">
-                        <a href="{{ route('invoices.show', $invoice) }}" class="btn btn-secondary">Cancel</a>
+                        <a href="{{ route('invoices.show', $invoice) }}" data-voice-action="cancel" class="btn btn-secondary">Cancel</a>
                         <x-primary-button>Update Invoice</x-primary-button>
                     </div>
                 </form>
@@ -122,4 +122,16 @@
             }
         }
     </script>
+    @php
+        $voiceContext = [
+            'mode' => 'edit',
+            'invoice_number' => $invoice->invoice_number,
+            'presets' => $invoice->client->pricingPresets->map(fn ($p) => [
+                'id' => $p->id,
+                'name' => $p->name,
+                'total' => (float) $p->total,
+            ])->values(),
+        ];
+    @endphp
+    <script type="application/json" id="voice-context">@json($voiceContext)</script>
 </x-app-layout>

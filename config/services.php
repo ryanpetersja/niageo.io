@@ -38,6 +38,10 @@ return [
     'anthropic' => [
         'api_key' => env('ANTHROPIC_API_KEY'),
         'model' => env('ANTHROPIC_MODEL', 'claude-sonnet-4-5-20250929'),
+        // Voice assistant (natural-language UI). Effort is only sent when set;
+        // leave ANTHROPIC_VOICE_EFFORT empty for models without effort control (e.g. Haiku 4.5).
+        'voice_model' => env('ANTHROPIC_VOICE_MODEL', 'claude-opus-5'),
+        'voice_effort' => env('ANTHROPIC_VOICE_EFFORT', 'low'),
     ],
 
 ];

@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-app-layout voice-page="invoices.index">
     <x-slot name="header">
         <x-breadcrumbs :items="[['label' => 'Invoices']]" />
         <div class="flex justify-between items-center">
@@ -41,7 +41,7 @@
             <div class="card">
                 <div class="p-6">
                     {{-- Filters --}}
-                    <form method="GET" class="flex flex-wrap gap-3 mb-6">
+                    <form method="GET" data-voice-form="filters" class="flex flex-wrap gap-3 mb-6">
                         <input type="text" name="search" value="{{ request('search') }}" placeholder="Search invoices..." class="field flex-1 min-w-[200px]">
                         <select name="status" class="field" style="width:auto;">
                             <option value="">All Statuses</option>
@@ -68,6 +68,7 @@
                                 Showing {{ $invoices->firstItem() }}–{{ $invoices->lastItem() }} of {{ $invoices->total() }} invoices
                             </div>
                             <a href="{{ route('invoices.download-all', request()->query()) }}"
+                               data-voice-action="download-all"
                                class="btn btn-secondary"
                                onclick="this.style.pointerEvents='none'; this.style.opacity=0.6;">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
@@ -92,7 +93,7 @@
                         <tbody class="divide-hair">
                             @php $map = ['paid' => 'badge-good', 'sent' => 'badge-info', 'draft' => 'badge-gray', 'overdue' => 'badge-danger', 'cancelled' => 'badge-warn']; @endphp
                             @forelse($invoices as $inv)
-                                <tr class="row-item">
+                                <tr class="row-item" data-voice-invoice="{{ $inv->invoice_number }}" data-voice-url="{{ route('invoices.show', $inv) }}">
                                     <td class="px-4 py-3">
                                         <a href="{{ route('invoices.show', $inv) }}" class="accent-ink hover:underline font-medium">{{ $inv->invoice_number }}</a>
                                         @if($inv->title)
@@ -128,4 +129,28 @@
             </div>
         </div>
     </div>
+    @php
+        $voiceContext = [
+            'invoices' => $invoices->getCollection()->map(fn ($inv) => [
+                'number' => $inv->invoice_number,
+                'title' => $inv->title,
+                'client' => $inv->client->company_name,
+                'client_id' => $inv->client_id,
+                'status' => $inv->status,
+                'total' => (float) $inv->total,
+                'balance_due' => (float) $inv->balance_due,
+                'issue_date' => $inv->issue_date->format('Y-m-d'),
+                'due_date' => $inv->due_date->format('Y-m-d'),
+            ])->values(),
+            'pagination' => [
+                'from' => $invoices->firstItem() ?? 0,
+                'to' => $invoices->lastItem() ?? 0,
+                'total' => $invoices->total(),
+                'current_page' => $invoices->currentPage(),
+                'last_page' => $invoices->lastPage(),
+            ],
+            'urls' => ['create' => route('invoices.create')],
+        ];
+    @endphp
+    <script type="application/json" id="voice-context">@json($voiceContext)</script>
 </x-app-layout>

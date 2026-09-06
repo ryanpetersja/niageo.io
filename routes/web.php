@@ -14,6 +14,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ScopeController;
 use App\Http\Controllers\SubscriptionBillController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\VoiceCommandController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome');
@@ -37,6 +38,11 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/invoices/{invoice}/apply-preset', [InvoiceController::class, 'applyPreset'])->name('invoices.apply-preset');
     Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'pdf'])->name('invoices.pdf');
     Route::get('/invoices/{invoice}/pdf/download', [InvoiceController::class, 'downloadPdf'])->name('invoices.pdf.download');
+
+    // Voice assistant (natural-language commands → UI actions)
+    Route::post('/voice/interpret', [VoiceCommandController::class, 'interpret'])
+        ->middleware('throttle:60,1')
+        ->name('voice.interpret');
 
     // Payments
     Route::post('/invoices/{invoice}/payments', [PaymentController::class, 'store'])->name('payments.store');

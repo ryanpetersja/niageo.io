@@ -28,9 +28,24 @@
             @endif
 
             <!-- Page Content -->
-            <main>
+            <main data-voice-page="{{ $attributes->get('voice-page') }}">
                 {{ $slot }}
             </main>
         </div>
+
+        @php
+            $voiceFlash = null;
+            if (session('error')) {
+                $voiceFlash = ['error', session('error')];
+            } elseif (session('success')) {
+                $voiceFlash = ['success', session('success')];
+            } elseif (isset($errors) && $errors->any()) {
+                $voiceFlash = ['error', 'The form could not be saved: ' . $errors->first()];
+            }
+        @endphp
+        @if($voiceFlash)
+            <div data-voice-flash="{{ $voiceFlash[0] }}" hidden>{{ $voiceFlash[1] }}</div>
+        @endif
+        <x-voice-assistant />
     </body>
 </html>

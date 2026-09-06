@@ -109,3 +109,58 @@
     /* Section divider line for tables/lists */
     .divide-hair > * + * { border-top: 1px solid var(--border); }
 }
+
+/* ============================================================
+   Voice assistant widget + "the page reacts" highlight
+   ============================================================ */
+@layer components {
+    [x-cloak] { display: none !important; }
+
+    .voice-mic {
+        width: 3.25rem; height: 3.25rem; border-radius: 999px; position: relative;
+        display: inline-flex; align-items: center; justify-content: center;
+        background: var(--surface-2); color: var(--text); border: 1px solid var(--border-strong);
+        box-shadow: var(--shadow); cursor: pointer;
+        transition: background-color .15s, color .15s, transform .15s;
+    }
+    .voice-mic:hover { transform: translateY(-1px); background: var(--surface-3); }
+    .voice-mic:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-soft), var(--shadow); }
+    .voice-mic.is-listening { background: var(--accent); color: #fff; border-color: transparent; box-shadow: 0 6px 18px rgba(99, 102, 241, .35); }
+    .voice-mic.is-listening::after {
+        content: ''; position: absolute; inset: -4px; border-radius: inherit;
+        border: 2px solid var(--accent); animation: voice-pulse 1.4s ease-out infinite;
+    }
+    .voice-mic.is-thinking { background: var(--warn-soft); color: var(--warn); border-color: rgba(251, 191, 36, .35); }
+    .voice-mic.is-speaking { background: var(--good-soft); color: var(--good); border-color: rgba(52, 211, 153, .35); }
+    .voice-mic.is-unsupported { opacity: .55; }
+
+    .voice-icon-btn {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 1.75rem; height: 1.75rem; border-radius: .5rem; font-size: .8rem; font-weight: 700;
+        color: var(--text-muted); transition: background-color .15s, color .15s;
+    }
+    .voice-icon-btn:hover { background-color: var(--surface-2); color: var(--text); }
+
+    .voice-dot { width: .5rem; height: .5rem; border-radius: 999px; background: var(--text-faint); flex: none; }
+    .voice-dot.listening { background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    .voice-dot.thinking { background: var(--warn); }
+    .voice-dot.speaking { background: var(--good); }
+
+    .voice-bubble { border-radius: .75rem; padding: .45rem .7rem; font-size: .8rem; line-height: 1.4; overflow-wrap: anywhere; }
+    .voice-bubble-user { background: var(--accent-soft); color: var(--accent-ink); margin-left: 1.5rem; }
+    .voice-bubble-assistant { background: var(--surface-2); color: var(--text); margin-right: 1.5rem; }
+    .voice-bubble-system { background: var(--warn-soft); color: var(--warn); margin-right: 1.5rem; }
+
+    /* Fields, rows and buttons the assistant just changed glow briefly. */
+    .voice-touched { animation: voice-touch 1.8s ease-out; }
+}
+
+@keyframes voice-pulse {
+    0% { transform: scale(1); opacity: .9; }
+    100% { transform: scale(1.6); opacity: 0; }
+}
+@keyframes voice-touch {
+    0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, .85); }
+    35% { box-shadow: 0 0 0 5px rgba(99, 102, 241, .40); }
+    100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+}

@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-app-layout voice-page="invoices.show">
     @php
         $statusBadge = ['paid' => 'badge-good', 'sent' => 'badge-info', 'draft' => 'badge-gray', 'overdue' => 'badge-danger', 'cancelled' => 'badge-warn'];
         $transitionStyle = [
@@ -24,12 +24,12 @@
                 @if($invoice->status === 'draft')
                     <a href="{{ route('invoices.edit', $invoice) }}" class="btn btn-secondary">Edit</a>
                 @endif
-                <form method="POST" action="{{ route('invoices.duplicate', $invoice) }}" class="inline">
+                <form method="POST" action="{{ route('invoices.duplicate', $invoice) }}" data-voice-action="duplicate" class="inline">
                     @csrf
                     <button type="submit" class="btn btn-secondary">Duplicate</button>
                 </form>
                 @if(in_array($invoice->status, ['draft', 'cancelled']))
-                    <form method="POST" action="{{ route('invoices.destroy', $invoice) }}" class="inline" onsubmit="return confirm('Are you sure you want to delete this invoice? This cannot be undone.')">
+                    <form method="POST" action="{{ route('invoices.destroy', $invoice) }}" data-voice-action="delete-invoice" class="inline" onsubmit="return confirm('Are you sure you want to delete this invoice? This cannot be undone.')">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="btn btn-danger">Delete</button>
@@ -121,7 +121,7 @@
                             <h3 class="text-lg font-semibold text-white mb-4">Actions</h3>
                             <div class="space-y-2">
                                 @foreach($validTransitions as $transition)
-                                    <form method="POST" action="{{ route('invoices.transition', $invoice) }}">
+                                    <form method="POST" action="{{ route('invoices.transition', $invoice) }}" data-voice-action="transition" data-status="{{ $transition }}">
                                         @csrf
                                         <input type="hidden" name="status" value="{{ $transition }}">
                                         <button type="submit" class="w-full text-left px-4 py-2 rounded-lg text-sm font-medium transition hover:brightness-125" style="{{ $transitionStyle[$transition] ?? '' }}">Mark as {{ ucfirst($transition) }}</button>
@@ -135,7 +135,7 @@
                     @if(!in_array($invoice->status, ['draft', 'cancelled', 'paid']))
                         <div class="card p-6">
                             <h3 class="text-lg font-semibold text-white mb-4">Record Payment</h3>
-                            <form method="POST" action="{{ route('payments.store', $invoice) }}" class="space-y-3">
+                            <form method="POST" action="{{ route('payments.store', $invoice) }}" data-voice-form="payment" class="space-y-3">
                                 @csrf
                                 <div>
                                     <x-input-label for="amount" value="Amount" />
@@ -179,7 +179,7 @@
                                                 @if($payment->reference)<div class="text-xs text-faint">Ref: {{ $payment->reference }}</div>@endif
                                             </div>
                                             @if($invoice->status !== 'cancelled')
-                                                <form method="POST" action="{{ route('payments.destroy', $payment) }}" onsubmit="return confirm('Delete this payment?')">
+                                                <form method="POST" action="{{ route('payments.destroy', $payment) }}" data-voice-action="delete-payment" data-payment-number="{{ $loop->iteration }}" onsubmit="return confirm('Delete this payment?')">
                                                     @csrf @method('DELETE')
                                                     <button type="submit" class="text-xs text-slate-500 hover:text-rose-400">Delete</button>
                                                 </form>
@@ -211,4 +211,52 @@
             </div>
         </div>
     </div>
+    @php
+        $voiceContext = [
+            'invoice' => [
+                'id' => $invoice->id,
+                'number' => $invoice->invoice_number,
+                'title' => $invoice->title,
+                'status' => $invoice->status,
+                'client' => $invoice->client->company_name,
+                'client_id' => $invoice->client_id,
+                'issue_date' => $invoice->issue_date->format('Y-m-d'),
+                'due_date' => $invoice->due_date->format('Y-m-d'),
+                'tax_rate' => (float) $invoice->tax_rate,
+                'subtotal' => (float) $invoice->subtotal,
+                'tax_amount' => (float) $invoice->tax_amount,
+                'total' => (float) $invoice->total,
+                'amount_paid' => (float) $invoice->amount_paid,
+                'balance_due' => (float) $invoice->balance_due,
+                'notes' => $invoice->notes,
+                'internal_notes' => $invoice->internal_notes,
+            ],
+            'line_items' => $invoice->lineItems->values()->map(fn ($item, $k) => [
+                'line' => $k + 1,
+                'description' => $item->description,
+                'quantity' => (float) $item->quantity,
+                'unit_price' => (float) $item->unit_price,
+                'total' => (float) $item->total,
+            ]),
+            'payments' => $invoice->payments->values()->map(fn ($payment, $k) => [
+                'number' => $k + 1,
+                'id' => $payment->id,
+                'amount' => (float) $payment->amount,
+                'date' => $payment->payment_date->format('Y-m-d'),
+                'method' => $payment->payment_method,
+                'reference' => $payment->reference,
+            ]),
+            'valid_transitions' => array_values($validTransitions),
+            'can_edit' => $invoice->status === 'draft',
+            'can_delete' => in_array($invoice->status, ['draft', 'cancelled']),
+            'can_record_payment' => ! in_array($invoice->status, ['draft', 'cancelled', 'paid']),
+            'urls' => [
+                'edit' => route('invoices.edit', $invoice),
+                'pdf' => route('invoices.pdf', $invoice),
+                'pdf_download' => route('invoices.pdf.download', $invoice),
+                'create' => route('invoices.create'),
+            ],
+        ];
+    @endphp
+    <script type="application/json" id="voice-context">@json($voiceContext)</script>
 </x-app-layout>

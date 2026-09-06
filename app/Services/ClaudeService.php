@@ -663,4 +663,35 @@ PROMPT;
 
         return trim($response->json('content.0.text', ''));
     }
+
+    /**
+     * Low-level Messages API call used by features that build their own payload
+     * (tools, system blocks, etc.). Returns the decoded response body.
+     *
+     * @throws \RuntimeException when the API key is missing or the request fails
+     */
+    public function send(array $payload, int $timeoutSeconds = 60, string $context = 'messages'): array
+    {
+        $apiKey = config('services.anthropic.api_key');
+
+        if (empty($apiKey)) {
+            throw new \RuntimeException('Anthropic API key is not configured.');
+        }
+
+        $response = Http::withHeaders([
+            'x-api-key' => $apiKey,
+            'anthropic-version' => '2023-06-01',
+            'Content-Type' => 'application/json',
+        ])->timeout($timeoutSeconds)->post('https://api.anthropic.com/v1/messages', $payload);
+
+        if (! $response->successful()) {
+            Log::error("Claude API failed ({$context})", [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+            throw new \RuntimeException('The AI service returned an error. Please try again.');
+        }
+
+        return $response->json() ?? [];
+    }
 }
