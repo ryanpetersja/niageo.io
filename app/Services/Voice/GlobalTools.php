@@ -19,7 +19,7 @@ final class GlobalTools
         return [
             Tool::make(
                 'navigate',
-                'Go to another screen of the app. Call this when the user asks to open or go to a section: the dashboard, the invoices list, a new invoice, billing plans (recurring invoices), products, clients, reports, scopes, monitoring (uptime), subscriptions, users, settings, or to go back to the previous screen.',
+                'Go to another screen of the app. Call this when the user asks to open or go to a section: the dashboard, the invoices list, a new invoice, billing plans (recurring invoices), products, clients, reports, scopes, monitoring (uptime), subscriptions, users, settings, or to go back to the previous screen. If the user also wants something done on that screen (filter it, open something, change something), call continue_task in the same response with those steps; do not treat navigating as having done them.',
                 ['to' => Tool::string('Destination screen.', self::NAVIGATE_TARGETS)],
                 ['to']
             ),

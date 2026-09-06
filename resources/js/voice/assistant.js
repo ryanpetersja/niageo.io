@@ -240,6 +240,9 @@ export function voiceAssistant() {
             this.resumeState = null;
             this.persist();
             this.status = 'thinking';
+            // Queued actions may include continue_task, which needs the request that started all this.
+            this.currentTranscript = resume.transcript || this.lastUserText();
+            this.currentReply = resume.reply || '';
 
             const outcome = await this.runActions(resume.actions || [], resume.reply);
             if (outcome.navigated) return;
@@ -449,13 +452,20 @@ export function voiceAssistant() {
             if (text) this.send(text);
         },
 
+        /** The most recent thing the user actually said (continuation turns excluded). */
+        lastUserText() {
+            const entry = [...this.history].reverse().find((h) => h.role === 'user' && !h.text.startsWith('(continuing on '));
+            return entry ? entry.text : '';
+        },
+
         /**
          * Send one command. With `task`, this is the planner continuing a multi-step request
          * on a new screen: the original request is resent with the note of what remains.
+         * Resolves to false when nothing was sent.
          */
         async send(rawText, { task = null } = {}) {
             const text = String(rawText || '').trim();
-            if (!text || this.busy) return;
+            if (!text || this.busy) return false;
 
             if (!task) {
                 this.addLog('user', text);
@@ -514,14 +524,14 @@ export function voiceAssistant() {
                 this.addLog('system', message);
                 await this.say(message);
                 this.afterTurn();
-                return;
+                return true;
             }
             this.busy = false;
 
             // The request was cancelled while the planner was thinking.
             if (task && this.task !== task) {
                 this.afterTurn();
-                return;
+                return true;
             }
 
             this.recordUsage(data.usage);
@@ -545,7 +555,7 @@ export function voiceAssistant() {
                 this.addLog('system', message);
                 await this.say(message);
                 this.afterTurn();
-                return;
+                return true;
             }
 
             if (data.confirm?.prompt) {
@@ -553,10 +563,11 @@ export function voiceAssistant() {
                 this.addLog('assistant', data.confirm.prompt);
                 await this.say(data.confirm.prompt);
                 this.afterTurn();
-                return;
+                return true;
             }
 
             await this.performTurn(actions, data.reply || 'Done.');
+            return true;
         },
 
         /** Execute actions, then speak the outcome (unless a page load will do it after reload). */
@@ -603,7 +614,7 @@ export function voiceAssistant() {
                 }
                 if (result.error) return { error: result.error };
                 if (result.navigates) {
-                    this.resumeState = { actions: actions.slice(i + 1), reply };
+                    this.resumeState = { actions: actions.slice(i + 1), reply, transcript: this.currentTranscript };
                     this.persist();
                     return { navigated: true };
                 }
@@ -617,7 +628,7 @@ export function voiceAssistant() {
         noteContinuation({ remaining, done }) {
             const previous = this.task;
             this.task = {
-                original: previous?.original || this.currentTranscript,
+                original: previous?.original || this.currentTranscript || this.lastUserText(),
                 remaining: String(remaining || ''),
                 step: (previous?.step || 0) + 1,
                 done: [...(previous?.done || []), done || this.currentReply].filter(Boolean).slice(-10),
@@ -649,8 +660,16 @@ export function voiceAssistant() {
                 this.afterTurn();
                 return;
             }
+            if (!task.original) {
+                this.task = null;
+                this.persist();
+                this.addLog('system', "I lost track of the original request, so I stopped. Please say the rest again.");
+                this.afterTurn();
+                return;
+            }
             this.addLog('system', `Continuing: ${task.remaining}`);
-            await this.send(task.original, { task });
+            const sent = await this.send(task.original, { task });
+            if (sent === false) this.afterTurn();
         },
 
         cancelTask() {

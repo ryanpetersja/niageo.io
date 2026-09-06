@@ -108,6 +108,8 @@ class VoiceCommandTest extends TestCase
                 && $body['model'] === 'claude-opus-5'
                 && $body['output_config']['effort'] === 'low'
                 && $body['system'][0]['cache_control']['type'] === 'ephemeral'
+                && str_contains($body['system'][0]['text'], 'Invoice list (invoices.index): set_filters, open_invoice')
+                && str_contains($body['system'][0]['text'], 'Invoice editor (invoices.form):')
                 && in_array('set_filters', $toolNames, true)
                 && in_array('open_invoice', $toolNames, true)
                 && in_array('navigate', $toolNames, true)

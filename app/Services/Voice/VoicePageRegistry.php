@@ -33,4 +33,23 @@ class VoicePageRegistry
     {
         return isset($this->pages[$name]);
     }
+
+    /**
+     * One line per voice-enabled screen listing its tools, for the planner's system prompt.
+     * Deterministic so the prompt prefix stays cacheable.
+     */
+    public function capabilityMap(): string
+    {
+        $lines = [];
+        foreach ($this->pages as $name => $class) {
+            /** @var PageCapability $page */
+            $page = app($class);
+            $tools = array_column($page->tools([]), 'name');
+            $lines[] = "- {$page->title()} ({$name}): " . implode(', ', $tools);
+        }
+        $lines[] = '- Every screen: navigate, continue_task, show_help, stop_listening.';
+        $lines[] = '- Other screens (dashboard, clients, billing plans, products, reports, scopes, monitoring, subscriptions, users, settings): navigation only for now; say so if asked for more there.';
+
+        return implode("\n", $lines);
+    }
 }

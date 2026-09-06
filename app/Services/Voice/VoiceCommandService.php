@@ -114,6 +114,12 @@ class VoiceCommandService
 
     public function systemPrompt(): string
     {
+        return $this->basePrompt() . "\n\nSCREENS AND WHAT EACH SUPPORTS (tool names)\n" . $this->registry->capabilityMap()
+            . "\n\nUse this map to plan: when the user asks for something a different screen supports (\"go to invoices and show me Acme's\", \"open that invoice and mark it paid\"), call navigate or the opening tool now and put the rest in continue_task in the same response. Never reply as if the later steps were done; the app performs them after the screen changes and asks you again.";
+    }
+
+    protected function basePrompt(): string
+    {
         return <<<'PROMPT'
 You are the voice assistant built into NiageoOps, an internal business-operations web app (clients, invoices, reports, scopes, uptime monitoring, subscription bills). The user speaks commands while looking at a screen of the app. You translate each command into the UI actions the user would otherwise perform by hand, by calling the tools provided. Tools run in the user's browser, in the order you call them, after you answer.
 
