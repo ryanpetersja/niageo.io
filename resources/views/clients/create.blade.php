@@ -1,12 +1,12 @@
 <x-app-layout>
     <x-slot name="header">
         <x-breadcrumbs :items="[['label' => 'Clients', 'url' => route('clients.index')], ['label' => 'Add Client']]" />
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">Add Client</h2>
+        <h2 class="font-semibold text-xl text-white leading-tight">Add Client</h2>
     </x-slot>
 
     <div class="py-6">
-        <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="card p-6">
                 <form method="POST" action="{{ route('clients.store') }}">
                     @csrf
                     <div class="space-y-6">
@@ -17,7 +17,7 @@
                         </div>
                         <div>
                             <x-input-label for="billing_terms" value="Billing Terms" />
-                            <select id="billing_terms" name="billing_terms" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <select id="billing_terms" name="billing_terms" class="field mt-1">
                                 <option value="net_15" {{ old('billing_terms') === 'net_15' ? 'selected' : '' }}>Net 15</option>
                                 <option value="net_30" {{ old('billing_terms', 'net_30') === 'net_30' ? 'selected' : '' }}>Net 30</option>
                                 <option value="net_60" {{ old('billing_terms') === 'net_60' ? 'selected' : '' }}>Net 60</option>
@@ -30,14 +30,14 @@
                         </div>
                         <div>
                             <x-input-label for="notes" value="Notes" />
-                            <textarea id="notes" name="notes" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">{{ old('notes') }}</textarea>
+                            <textarea id="notes" name="notes" rows="3" class="field mt-1">{{ old('notes') }}</textarea>
                         </div>
                         <div class="flex items-center gap-2">
-                            <input type="checkbox" id="is_active" name="is_active" value="1" checked class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
-                            <x-input-label for="is_active" value="Active" />
+                            <input type="checkbox" id="is_active" name="is_active" value="1" checked class="rounded text-indigo-500 focus:ring-indigo-500" style="background: var(--surface-2); border-color: var(--border-strong);">
+                            <x-input-label for="is_active" value="Active" class="!mb-0" />
                         </div>
-                        <div class="flex justify-end gap-4">
-                            <a href="{{ route('clients.index') }}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50">Cancel</a>
+                        <div class="flex justify-end gap-3">
+                            <a href="{{ route('clients.index') }}" class="btn btn-secondary">Cancel</a>
                             <x-primary-button>Create Client</x-primary-button>
                         </div>
                     </div>

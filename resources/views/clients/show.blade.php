@@ -2,26 +2,26 @@
     <x-slot name="header">
         <x-breadcrumbs :items="[['label' => 'Clients', 'url' => route('clients.index')], ['label' => $client->company_name]]" />
         <div class="flex justify-between items-center">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ $client->company_name }}</h2>
+            <h2 class="font-semibold text-xl text-white leading-tight">{{ $client->company_name }}</h2>
             <div class="flex gap-2 items-center">
                 <div x-data="{ open: false, from: '{{ now()->startOfYear()->format('Y-m-d') }}', to: '{{ now()->format('Y-m-d') }}' }" class="relative">
                     <button @click="open = !open" type="button" class="inline-flex items-center px-4 py-2 bg-amber-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-amber-700 transition">
                         Generate Statement
                     </button>
-                    <div x-show="open" @click.away="open = false" x-cloak class="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 p-4 z-50">
-                        <h4 class="text-sm font-semibold text-gray-800 mb-3">Statement Date Range</h4>
+                    <div x-show="open" @click.away="open = false" x-cloak class="absolute right-0 mt-2 w-72 rounded-lg shadow-lg border p-4 bg-slate-800 border-slate-700 z-50">
+                        <h4 class="text-sm font-semibold text-white mb-3">Statement Date Range</h4>
                         <div class="space-y-3">
                             <div>
-                                <label class="block text-xs font-medium text-gray-600 mb-1">From</label>
-                                <input type="date" x-model="from" class="block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <label class="block text-xs font-medium text-slate-300 mb-1">From</label>
+                                <input type="date" x-model="from" class="block field text-sm">
                             </div>
                             <div>
-                                <label class="block text-xs font-medium text-gray-600 mb-1">To</label>
-                                <input type="date" x-model="to" class="block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <label class="block text-xs font-medium text-slate-300 mb-1">To</label>
+                                <input type="date" x-model="to" class="block field text-sm">
                             </div>
                             <div class="flex gap-2 pt-1">
                                 <a :href="`{{ route('clients.statement', $client) }}?from=${from}&to=${to}`" target="_blank" class="flex-1 text-center px-3 py-2 bg-indigo-600 text-white rounded-md text-xs font-semibold uppercase hover:bg-indigo-700 transition">Preview</a>
-                                <a :href="`{{ route('clients.statement.download', $client) }}?from=${from}&to=${to}`" target="_blank" class="flex-1 text-center px-3 py-2 bg-white border border-gray-300 text-gray-700 rounded-md text-xs font-semibold uppercase hover:bg-gray-50 transition">Download</a>
+                                <a :href="`{{ route('clients.statement.download', $client) }}?from=${from}&to=${to}`" target="_blank" class="flex-1 text-center px-3 py-2 bg-slate-800 border border-slate-600 text-slate-200 rounded-md text-xs font-semibold uppercase hover:bg-slate-700 transition">Download</a>
                             </div>
                         </div>
                     </div>
@@ -29,7 +29,7 @@
                 <a href="{{ route('scopes.create', ['client_id' => $client->id]) }}" class="inline-flex items-center px-4 py-2 bg-purple-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-purple-700 transition">New Scope</a>
                 <a href="{{ route('reports.create', ['client_id' => $client->id]) }}" class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 transition">New Report</a>
                 <a href="{{ route('invoices.create', ['client_id' => $client->id]) }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 transition">New Invoice</a>
-                <a href="{{ route('clients.edit', $client) }}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 transition">Edit</a>
+                <a href="{{ route('clients.edit', $client) }}" class="inline-flex items-center px-4 py-2 bg-slate-800 border border-slate-600 rounded-md font-semibold text-xs text-slate-200 uppercase tracking-widest shadow-sm hover:bg-slate-700 transition">Edit</a>
             </div>
         </div>
     </x-slot>
@@ -42,50 +42,50 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- Client Details -->
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Details</h3>
+                <div class="card p-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">Details</h3>
                     <dl class="space-y-3">
-                        <div><dt class="text-sm text-gray-500">Billing Terms</dt><dd class="font-medium">{{ $client->billing_terms_label }}</dd></div>
-                        <div><dt class="text-sm text-gray-500">Billing Email</dt><dd class="font-medium">{{ $client->billing_email ?: 'N/A' }}</dd></div>
-                        <div><dt class="text-sm text-gray-500">Outstanding Balance</dt><dd class="font-medium text-red-600">${{ number_format($client->outstanding_balance, 2) }}</dd></div>
-                        <div><dt class="text-sm text-gray-500">Status</dt><dd><span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ $client->is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">{{ $client->is_active ? 'Active' : 'Inactive' }}</span></dd></div>
+                        <div><dt class="text-sm text-slate-400">Billing Terms</dt><dd class="font-medium">{{ $client->billing_terms_label }}</dd></div>
+                        <div><dt class="text-sm text-slate-400">Billing Email</dt><dd class="font-medium">{{ $client->billing_email ?: 'N/A' }}</dd></div>
+                        <div><dt class="text-sm text-slate-400">Outstanding Balance</dt><dd class="font-medium text-red-600">${{ number_format($client->outstanding_balance, 2) }}</dd></div>
+                        <div><dt class="text-sm text-slate-400">Status</dt><dd><span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ $client->is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">{{ $client->is_active ? 'Active' : 'Inactive' }}</span></dd></div>
                         @if($client->notes)
-                            <div><dt class="text-sm text-gray-500">Notes</dt><dd class="text-sm">{{ $client->notes }}</dd></div>
+                            <div><dt class="text-sm text-slate-400">Notes</dt><dd class="text-sm">{{ $client->notes }}</dd></div>
                         @endif
                     </dl>
                 </div>
 
                 <!-- Contacts -->
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6" x-data="contactManager()">
+                <div class="card p-6" x-data="contactManager()">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-semibold text-gray-800">Contacts</h3>
-                        <button @click="showForm = !showForm" class="text-sm text-indigo-600 hover:text-indigo-800">+ Add</button>
+                        <h3 class="text-lg font-semibold text-white">Contacts</h3>
+                        <button @click="showForm = !showForm" class="text-sm accent-ink hover:underline">+ Add</button>
                     </div>
 
                     <template x-if="showForm">
-                        <form method="POST" action="{{ route('clients.show', $client) }}" @submit.prevent="saveContact" class="mb-4 p-3 bg-gray-50 rounded-lg space-y-2">
-                            <input type="text" x-model="newContact.name" placeholder="Name" class="block w-full rounded-md border-gray-300 shadow-sm text-sm" required>
-                            <input type="email" x-model="newContact.email" placeholder="Email" class="block w-full rounded-md border-gray-300 shadow-sm text-sm">
-                            <input type="text" x-model="newContact.phone" placeholder="Phone" class="block w-full rounded-md border-gray-300 shadow-sm text-sm">
+                        <form method="POST" action="{{ route('clients.show', $client) }}" @submit.prevent="saveContact" class="mb-4 p-3 bg-slate-800/60 rounded-lg space-y-2">
+                            <input type="text" x-model="newContact.name" placeholder="Name" class="field text-sm" required>
+                            <input type="email" x-model="newContact.email" placeholder="Email" class="field text-sm">
+                            <input type="text" x-model="newContact.phone" placeholder="Phone" class="field text-sm">
                             <div class="flex items-center gap-2">
-                                <input type="checkbox" x-model="newContact.is_primary" class="rounded border-gray-300 text-indigo-600">
-                                <label class="text-sm text-gray-600">Primary contact</label>
+                                <input type="checkbox" x-model="newContact.is_primary" class="rounded text-indigo-500 bg-slate-700 border-slate-600">
+                                <label class="text-sm text-slate-300">Primary contact</label>
                             </div>
                             <div class="flex gap-2">
                                 <button type="submit" class="px-3 py-1 bg-indigo-600 text-white rounded text-sm">Save</button>
-                                <button type="button" @click="showForm = false" class="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm">Cancel</button>
+                                <button type="button" @click="showForm = false" class="px-3 py-1 bg-gray-200 text-slate-200 rounded text-sm">Cancel</button>
                             </div>
                         </form>
                     </template>
 
                     @forelse($client->contacts as $contact)
-                        <div class="py-2 border-b last:border-b-0">
-                            <div class="font-medium text-sm">{{ $contact->name }} @if($contact->is_primary)<span class="text-xs text-indigo-600">(Primary)</span>@endif</div>
-                            @if($contact->email)<div class="text-xs text-gray-500">{{ $contact->email }}</div>@endif
-                            @if($contact->phone)<div class="text-xs text-gray-500">{{ $contact->phone }}</div>@endif
+                        <div class="py-2 border-b last:border-b-0 border-slate-800">
+                            <div class="font-medium text-sm">{{ $contact->name }} @if($contact->is_primary)<span class="text-xs accent-ink">(Primary)</span>@endif</div>
+                            @if($contact->email)<div class="text-xs text-slate-400">{{ $contact->email }}</div>@endif
+                            @if($contact->phone)<div class="text-xs text-slate-400">{{ $contact->phone }}</div>@endif
                         </div>
                     @empty
-                        <p class="text-gray-500 text-sm">No contacts yet.</p>
+                        <p class="text-slate-400 text-sm">No contacts yet.</p>
                     @endforelse
 
                     <script>
@@ -107,19 +107,19 @@
                 </div>
 
                 <!-- Pricing Presets -->
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6" x-data="presetManager()">
+                <div class="card p-6" x-data="presetManager()">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-semibold text-gray-800">Pricing Presets</h3>
-                        <button @click="openCreateForm()" x-show="!showForm" class="text-sm text-indigo-600 hover:text-indigo-800">+ Add</button>
+                        <h3 class="text-lg font-semibold text-white">Pricing Presets</h3>
+                        <button @click="openCreateForm()" x-show="!showForm" class="text-sm accent-ink hover:underline">+ Add</button>
                     </div>
 
                     <!-- Create / Edit Form -->
                     <template x-if="showForm">
-                        <div class="mb-4 p-4 bg-gray-50 rounded-lg space-y-3">
+                        <div class="mb-4 p-4 bg-slate-800/60 rounded-lg space-y-3">
                             <div class="flex items-center gap-3">
-                                <input type="text" x-model="form.name" placeholder="Preset name" class="flex-1 rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500" required>
-                                <label class="flex items-center gap-1.5 text-sm text-gray-600 whitespace-nowrap">
-                                    <input type="checkbox" x-model="form.is_active" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                <input type="text" x-model="form.name" placeholder="Preset name" class="field flex-1 text-sm" required>
+                                <label class="flex items-center gap-1.5 text-sm text-slate-300 whitespace-nowrap">
+                                    <input type="checkbox" x-model="form.is_active" class="rounded text-indigo-500 focus:ring-indigo-500 bg-slate-700 border-slate-600">
                                     Active
                                 </label>
                             </div>
@@ -128,7 +128,7 @@
                             <div class="overflow-x-auto">
                                 <table class="w-full text-sm">
                                     <thead>
-                                        <tr class="text-left text-xs text-gray-500 uppercase tracking-wider">
+                                        <tr class="text-left text-xs text-slate-400 uppercase tracking-wider">
                                             <th class="pb-2">Description</th>
                                             <th class="pb-2 w-20">Qty</th>
                                             <th class="pb-2 w-24">Price</th>
@@ -140,15 +140,15 @@
                                         <template x-for="(item, index) in form.items" :key="index">
                                             <tr>
                                                 <td class="py-1 pr-2">
-                                                    <input type="text" x-model="item.description" placeholder="Line item description" class="w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                                                    <input type="text" x-model="item.description" placeholder="Line item description" class="field text-sm" required>
                                                 </td>
                                                 <td class="py-1 pr-2">
-                                                    <input type="number" x-model.number="item.quantity" step="0.01" min="0.01" class="w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                                                    <input type="number" x-model.number="item.quantity" step="0.01" min="0.01" class="field text-sm" required>
                                                 </td>
                                                 <td class="py-1 pr-2">
-                                                    <input type="number" x-model.number="item.unit_price" step="0.01" min="0" class="w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                                                    <input type="number" x-model.number="item.unit_price" step="0.01" min="0" class="field text-sm" required>
                                                 </td>
-                                                <td class="py-1 text-right text-gray-600 text-sm" x-text="'$' + ((item.quantity || 0) * (item.unit_price || 0)).toFixed(2)"></td>
+                                                <td class="py-1 text-right text-slate-300 text-sm" x-text="'$' + ((item.quantity || 0) * (item.unit_price || 0)).toFixed(2)"></td>
                                                 <td class="py-1 pl-1">
                                                     <button type="button" @click="removeItem(index)" x-show="form.items.length > 1" class="text-red-400 hover:text-red-600" title="Remove item">&times;</button>
                                                 </td>
@@ -159,8 +159,8 @@
                             </div>
 
                             <div class="flex justify-between items-center">
-                                <button type="button" @click="addItem()" class="text-sm text-indigo-600 hover:text-indigo-800">+ Add Item</button>
-                                <div class="text-sm font-semibold text-gray-700">
+                                <button type="button" @click="addItem()" class="text-sm accent-ink hover:underline">+ Add Item</button>
+                                <div class="text-sm font-semibold text-slate-200">
                                     Total: $<span x-text="grandTotal()"></span>
                                 </div>
                             </div>
@@ -169,7 +169,7 @@
                                 <button type="button" @click="savePreset()" :disabled="saving" class="px-3 py-1.5 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700 disabled:opacity-50">
                                     <span x-text="saving ? 'Saving...' : (editingId ? 'Update Preset' : 'Save Preset')"></span>
                                 </button>
-                                <button type="button" @click="cancelForm()" class="px-3 py-1.5 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300">Cancel</button>
+                                <button type="button" @click="cancelForm()" class="px-3 py-1.5 bg-slate-700 text-slate-200 rounded text-sm hover:bg-slate-600">Cancel</button>
                             </div>
 
                             <template x-if="formError">
@@ -180,27 +180,27 @@
 
                     <!-- Preset List -->
                     <template x-for="preset in presets" :key="preset.id">
-                        <div class="py-2 border-b last:border-b-0">
+                        <div class="py-2 border-b last:border-b-0 border-slate-800">
                             <div class="flex justify-between items-center">
                                 <div class="flex items-center gap-2">
                                     <span class="font-medium text-sm" x-text="preset.name"></span>
-                                    <span x-show="!preset.is_active" class="text-xs text-gray-400 italic">(inactive)</span>
+                                    <span x-show="!preset.is_active" class="text-xs text-slate-500 italic">(inactive)</span>
                                 </div>
-                                <span class="text-sm font-medium text-gray-600" x-text="'$' + presetTotal(preset).toFixed(2)"></span>
+                                <span class="text-sm font-medium text-slate-300" x-text="'$' + presetTotal(preset).toFixed(2)"></span>
                             </div>
                             <div class="mt-1 space-y-0.5">
                                 <template x-for="item in preset.items" :key="item.id">
-                                    <div class="text-xs text-gray-500" x-text="item.description + ' (' + Number(item.quantity) + ' \u00d7 $' + Number(item.unit_price).toFixed(2) + ')'"></div>
+                                    <div class="text-xs text-slate-400" x-text="item.description + ' (' + Number(item.quantity) + ' \u00d7 $' + Number(item.unit_price).toFixed(2) + ')'"></div>
                                 </template>
                             </div>
                             <div class="mt-1.5 flex gap-2 justify-end">
-                                <button @click="openEditForm(preset)" class="text-xs text-indigo-600 hover:text-indigo-800">Edit</button>
+                                <button @click="openEditForm(preset)" class="text-xs accent-ink hover:underline">Edit</button>
                                 <button @click="deletePreset(preset)" class="text-xs text-red-600 hover:text-red-800">Delete</button>
                             </div>
                         </div>
                     </template>
 
-                    <p x-show="presets.length === 0 && !showForm" class="text-gray-500 text-sm">No pricing presets.</p>
+                    <p x-show="presets.length === 0 && !showForm" class="text-slate-400 text-sm">No pricing presets.</p>
 
                     @php
                         $presetsJson = $client->pricingPresets->map(function ($p) {
@@ -343,18 +343,18 @@
             </div>
 
             <!-- Services -->
-            <div class="mt-6 bg-white overflow-hidden shadow-sm sm:rounded-lg p-6" x-data="serviceManager()">
+            <div class="mt-6 card p-6" x-data="serviceManager()">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-semibold text-gray-800">Services</h3>
-                    <button @click="openCreateForm()" x-show="!showForm" class="text-sm text-indigo-600 hover:text-indigo-800">+ Add</button>
+                    <h3 class="text-lg font-semibold text-white">Services</h3>
+                    <button @click="openCreateForm()" x-show="!showForm" class="text-sm accent-ink hover:underline">+ Add</button>
                 </div>
 
                 <template x-if="showForm">
-                    <div class="mb-4 p-4 bg-gray-50 rounded-lg space-y-3">
+                    <div class="mb-4 p-4 bg-slate-800/60 rounded-lg space-y-3">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
-                                <label class="block text-xs font-medium text-gray-600 mb-1">Service Type</label>
-                                <select x-model="form.service_type" @change="onTypeChange()" class="block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Service Type</label>
+                                <select x-model="form.service_type" @change="onTypeChange()" class="block field text-sm">
                                     <option value="hosting">Hosting</option>
                                     <option value="email">Email</option>
                                     <option value="backups">Backups</option>
@@ -362,22 +362,22 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-xs font-medium text-gray-600 mb-1">Display Name</label>
-                                <input type="text" x-model="form.display_name" placeholder="e.g., Web Hosting" class="block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Display Name</label>
+                                <input type="text" x-model="form.display_name" placeholder="e.g., Web Hosting" class="block field text-sm" required>
                             </div>
                         </div>
 
                         <div x-show="form.service_type === 'backups'">
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Backup Frequency</label>
-                            <select x-model="form.config.frequency" class="block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <label class="block text-xs font-medium text-slate-300 mb-1">Backup Frequency</label>
+                            <select x-model="form.config.frequency" class="block field text-sm">
                                 <option value="daily">Daily</option>
                                 <option value="weekly">Weekly</option>
                                 <option value="monthly">Monthly</option>
                             </select>
                         </div>
 
-                        <label class="flex items-center gap-2 text-sm text-gray-600">
-                            <input type="checkbox" x-model="form.is_active" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                        <label class="flex items-center gap-2 text-sm text-slate-300">
+                            <input type="checkbox" x-model="form.is_active" class="rounded text-indigo-500 focus:ring-indigo-500 bg-slate-700 border-slate-600">
                             Active
                         </label>
 
@@ -385,7 +385,7 @@
                             <button type="button" @click="saveService()" :disabled="saving" class="px-3 py-1.5 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700 disabled:opacity-50">
                                 <span x-text="saving ? 'Saving...' : (editingId ? 'Update' : 'Add Service')"></span>
                             </button>
-                            <button type="button" @click="cancelForm()" class="px-3 py-1.5 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300">Cancel</button>
+                            <button type="button" @click="cancelForm()" class="px-3 py-1.5 bg-slate-700 text-slate-200 rounded text-sm hover:bg-slate-600">Cancel</button>
                         </div>
 
                         <template x-if="formError">
@@ -395,21 +395,21 @@
                 </template>
 
                 <template x-for="service in services" :key="service.id">
-                    <div class="flex justify-between items-center py-2.5 border-b last:border-b-0">
+                    <div class="flex justify-between items-center py-2.5 border-b last:border-b-0 border-slate-800">
                         <div class="flex items-center gap-2">
                             <span class="w-2 h-2 rounded-full" :class="service.is_active ? 'bg-green-500' : 'bg-gray-300'"></span>
                             <span class="font-medium text-sm" x-text="service.display_name"></span>
-                            <span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600" x-text="service.service_type"></span>
-                            <span x-show="service.service_type === 'backups' && service.config && service.config.frequency" class="text-xs text-gray-400" x-text="'(' + (service.config?.frequency || '') + ')'"></span>
+                            <span class="text-xs px-1.5 py-0.5 rounded bg-slate-700 text-slate-300" x-text="service.service_type"></span>
+                            <span x-show="service.service_type === 'backups' && service.config && service.config.frequency" class="text-xs text-slate-500" x-text="'(' + (service.config?.frequency || '') + ')'"></span>
                         </div>
                         <div class="flex gap-2">
-                            <button @click="openEditForm(service)" class="text-xs text-indigo-600 hover:text-indigo-800">Edit</button>
+                            <button @click="openEditForm(service)" class="text-xs accent-ink hover:underline">Edit</button>
                             <button @click="deleteService(service)" class="text-xs text-red-600 hover:text-red-800">Delete</button>
                         </div>
                     </div>
                 </template>
 
-                <p x-show="services.length === 0 && !showForm" class="text-gray-500 text-sm">No services configured. Services appear on reports with calculated metrics.</p>
+                <p x-show="services.length === 0 && !showForm" class="text-slate-400 text-sm">No services configured. Services appear on reports with calculated metrics.</p>
 
                 @php
                     $servicesJson = $client->services->map(function ($s) {
@@ -529,27 +529,27 @@
             </div>
 
             <!-- GitHub Repositories -->
-            <div class="mt-6 bg-white overflow-hidden shadow-sm sm:rounded-lg p-6" x-data="repoManager()">
+            <div class="mt-6 card p-6" x-data="repoManager()">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-semibold text-gray-800">GitHub Repositories</h3>
-                    <button @click="openForm()" x-show="!showForm" class="text-sm text-indigo-600 hover:text-indigo-800">+ Add</button>
+                    <h3 class="text-lg font-semibold text-white">GitHub Repositories</h3>
+                    <button @click="openForm()" x-show="!showForm" class="text-sm accent-ink hover:underline">+ Add</button>
                 </div>
 
                 <template x-if="showForm">
-                    <div class="mb-4 p-4 bg-gray-50 rounded-lg">
+                    <div class="mb-4 p-4 bg-slate-800/60 rounded-lg">
                         <!-- Mode Toggle -->
                         <div class="flex items-center gap-3 mb-3">
-                            <button type="button" @click="manualMode = false" :class="!manualMode ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 border border-gray-300'" class="px-3 py-1 rounded text-xs font-semibold transition">Browse Repos</button>
-                            <button type="button" @click="manualMode = true" :class="manualMode ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 border border-gray-300'" class="px-3 py-1 rounded text-xs font-semibold transition">Enter Manually</button>
+                            <button type="button" @click="manualMode = false" :class="!manualMode ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-200 border border-slate-600'" class="px-3 py-1 rounded text-xs font-semibold transition">Browse Repos</button>
+                            <button type="button" @click="manualMode = true" :class="manualMode ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-200 border border-slate-600'" class="px-3 py-1 rounded text-xs font-semibold transition">Enter Manually</button>
                         </div>
 
                         <!-- Browse Mode -->
                         <div x-show="!manualMode" class="space-y-3">
                             <div>
-                                <label class="block text-xs font-medium text-gray-600 mb-1">Repository</label>
-                                <div x-show="loadingRepos" class="text-sm text-gray-400 py-2">Loading repositories...</div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Repository</label>
+                                <div x-show="loadingRepos" class="text-sm text-slate-500 py-2">Loading repositories...</div>
                                 <select x-show="!loadingRepos" x-model="selectedRepoFullName" @change="onRepoSelected()"
-                                    class="block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    class="block field text-sm">
                                     <option value="">Select a repository...</option>
                                     <template x-for="gr in githubRepos" :key="gr.full_name">
                                         <option :value="gr.full_name" x-text="gr.full_name + (gr.private ? ' (private)' : '')"></option>
@@ -559,10 +559,10 @@
 
                             <!-- Branch Select -->
                             <div x-show="selectedRepoFullName">
-                                <label class="block text-xs font-medium text-gray-600 mb-1">Default Branch</label>
-                                <div x-show="loadingBranches" class="text-sm text-gray-400 py-2">Loading branches...</div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Default Branch</label>
+                                <div x-show="loadingBranches" class="text-sm text-slate-500 py-2">Loading branches...</div>
                                 <select x-show="!loadingBranches" x-model="newRepo.default_branch"
-                                    class="block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    class="block field text-sm">
                                     <template x-for="br in branches" :key="br">
                                         <option :value="br" x-text="br"></option>
                                     </template>
@@ -573,37 +573,37 @@
                         <!-- Manual Entry Mode -->
                         <div x-show="manualMode" class="space-y-3">
                             <div>
-                                <label class="block text-xs font-medium text-gray-600 mb-1">Owner (username or org)</label>
-                                <input type="text" x-model="newRepo.owner" placeholder="e.g., octocat" class="block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Owner (username or org)</label>
+                                <input type="text" x-model="newRepo.owner" placeholder="e.g., octocat" class="block field text-sm">
                             </div>
                             <div>
-                                <label class="block text-xs font-medium text-gray-600 mb-1">Repository Name</label>
-                                <input type="text" x-model="newRepo.repo_name" placeholder="e.g., my-project" class="block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Repository Name</label>
+                                <input type="text" x-model="newRepo.repo_name" placeholder="e.g., my-project" class="block field text-sm">
                             </div>
                             <div>
-                                <label class="block text-xs font-medium text-gray-600 mb-1">Default Branch</label>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Default Branch</label>
                                 <div class="flex gap-2">
-                                    <input type="text" x-model="newRepo.default_branch" placeholder="main" class="flex-1 rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                    <button type="button" @click="fetchManualBranches()" :disabled="!newRepo.owner || !newRepo.repo_name || loadingBranches" class="px-3 py-1.5 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300 disabled:opacity-50 whitespace-nowrap">
+                                    <input type="text" x-model="newRepo.default_branch" placeholder="main" class="field flex-1 text-sm">
+                                    <button type="button" @click="fetchManualBranches()" :disabled="!newRepo.owner || !newRepo.repo_name || loadingBranches" class="px-3 py-1.5 bg-slate-700 text-slate-200 rounded text-xs hover:bg-slate-600 disabled:opacity-50 whitespace-nowrap">
                                         <span x-text="loadingBranches ? 'Loading...' : 'Fetch Branches'"></span>
                                     </button>
                                 </div>
                                 <template x-if="manualBranches.length > 0">
                                     <div class="mt-1.5 flex flex-wrap gap-1">
                                         <template x-for="br in manualBranches" :key="br">
-                                            <button type="button" @click="newRepo.default_branch = br" :class="newRepo.default_branch === br ? 'bg-indigo-100 text-indigo-800 border-indigo-300' : 'bg-gray-100 text-gray-600 border-gray-200'" class="px-2 py-0.5 rounded border text-xs hover:bg-indigo-50 transition" x-text="br"></button>
+                                            <button type="button" @click="newRepo.default_branch = br" :class="newRepo.default_branch === br ? 'bg-indigo-100 text-indigo-800 border-indigo-300' : 'bg-slate-700 text-slate-300 border-gray-200'" class="px-2 py-0.5 rounded border text-xs hover:bg-indigo-50 transition" x-text="br"></button>
                                         </template>
                                     </div>
                                 </template>
                             </div>
-                            <p class="text-xs text-gray-400">Your GitHub token must have access to this repo. It will be validated before adding.</p>
+                            <p class="text-xs text-slate-500">Your GitHub token must have access to this repo. It will be validated before adding.</p>
                         </div>
 
                         <div class="flex gap-2 mt-3">
                             <button type="button" @click="addRepo()" :disabled="saving || (!manualMode && !selectedRepoFullName) || (manualMode && (!newRepo.owner || !newRepo.repo_name))" class="px-3 py-1.5 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700 disabled:opacity-50">
                                 <span x-text="saving ? 'Adding...' : 'Add Repository'"></span>
                             </button>
-                            <button type="button" @click="closeForm()" class="px-3 py-1.5 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300">Cancel</button>
+                            <button type="button" @click="closeForm()" class="px-3 py-1.5 bg-slate-700 text-slate-200 rounded text-sm hover:bg-slate-600">Cancel</button>
                         </div>
                         <template x-if="formError">
                             <p class="text-red-600 text-xs mt-2" x-text="formError"></p>
@@ -613,18 +613,18 @@
 
                 <div class="space-y-0">
                     <template x-for="repo in repos" :key="repo.id">
-                        <div class="flex justify-between items-center py-2.5 border-b last:border-b-0">
+                        <div class="flex justify-between items-center py-2.5 border-b last:border-b-0 border-slate-800">
                             <div>
                                 <span class="font-medium text-sm" x-text="repo.full_name"></span>
-                                <span class="text-xs text-gray-400 ml-2" x-text="repo.default_branch"></span>
-                                <span x-show="!repo.is_active" class="text-xs text-gray-400 italic ml-1">(inactive)</span>
+                                <span class="text-xs text-slate-500 ml-2" x-text="repo.default_branch"></span>
+                                <span x-show="!repo.is_active" class="text-xs text-slate-500 italic ml-1">(inactive)</span>
                             </div>
                             <button @click="deleteRepo(repo)" class="text-xs text-red-600 hover:text-red-800">Remove</button>
                         </div>
                     </template>
                 </div>
 
-                <p x-show="repos.length === 0 && !showForm" class="text-gray-500 text-sm">No repositories linked. Add GitHub repos to enable report generation.</p>
+                <p x-show="repos.length === 0 && !showForm" class="text-slate-400 text-sm">No repositories linked. Add GitHub repos to enable report generation.</p>
 
                 @php
                     $reposJson = $client->repositories->map(function ($r) {
@@ -847,45 +847,45 @@
             </div>
 
             <!-- SSH Servers -->
-            <div class="mt-6 bg-white overflow-hidden shadow-sm sm:rounded-lg p-6" x-data="serverManager()">
+            <div class="mt-6 card p-6" x-data="serverManager()">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-semibold text-gray-800">SSH Servers</h3>
-                    <button @click="openForm()" x-show="!showForm" class="text-sm text-indigo-600 hover:text-indigo-800">+ Add</button>
+                    <h3 class="text-lg font-semibold text-white">SSH Servers</h3>
+                    <button @click="openForm()" x-show="!showForm" class="text-sm accent-ink hover:underline">+ Add</button>
                 </div>
 
                 <template x-if="showForm">
-                    <div class="mb-4 p-4 bg-gray-50 rounded-lg">
+                    <div class="mb-4 p-4 bg-slate-800/60 rounded-lg">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
-                                <label class="block text-xs font-medium text-gray-600 mb-1">Label</label>
-                                <input type="text" x-model="newServer.label" placeholder="e.g., Production" class="block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Label</label>
+                                <input type="text" x-model="newServer.label" placeholder="e.g., Production" class="block field text-sm" required>
                             </div>
                             <div>
-                                <label class="block text-xs font-medium text-gray-600 mb-1">Host</label>
-                                <input type="text" x-model="newServer.host" placeholder="IP or hostname" class="block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Host</label>
+                                <input type="text" x-model="newServer.host" placeholder="IP or hostname" class="block field text-sm" required>
                             </div>
                             <div>
-                                <label class="block text-xs font-medium text-gray-600 mb-1">Port</label>
-                                <input type="number" x-model.number="newServer.port" class="block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Port</label>
+                                <input type="number" x-model.number="newServer.port" class="block field text-sm">
                             </div>
                             <div>
-                                <label class="block text-xs font-medium text-gray-600 mb-1">Username</label>
-                                <input type="text" x-model="newServer.username" placeholder="root" class="block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Username</label>
+                                <input type="text" x-model="newServer.username" placeholder="root" class="block field text-sm">
                             </div>
                             <div class="md:col-span-2">
-                                <label class="block text-xs font-medium text-gray-600 mb-1">Auth Type</label>
-                                <select x-model="newServer.auth_type" class="block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Auth Type</label>
+                                <select x-model="newServer.auth_type" class="block field text-sm">
                                     <option value="key">SSH Key</option>
                                     <option value="password">Password</option>
                                 </select>
                             </div>
                             <div class="md:col-span-2" x-show="newServer.auth_type === 'key'">
-                                <label class="block text-xs font-medium text-gray-600 mb-1">Private Key Path</label>
-                                <input type="text" x-model="newServer.private_key_path" placeholder="C:\Users\Ryan\.ssh\id_rsa" class="block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Private Key Path</label>
+                                <input type="text" x-model="newServer.private_key_path" placeholder="C:\Users\Ryan\.ssh\id_rsa" class="block field text-sm">
                             </div>
                             <div class="md:col-span-2" x-show="newServer.auth_type === 'password'">
-                                <label class="block text-xs font-medium text-gray-600 mb-1">Password</label>
-                                <input type="password" x-model="newServer.password" class="block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Password</label>
+                                <input type="password" x-model="newServer.password" class="block field text-sm">
                             </div>
                         </div>
 
@@ -896,7 +896,7 @@
                             <button type="button" @click="addServer()" :disabled="saving || !newServer.host || !newServer.label" class="px-3 py-1.5 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700 disabled:opacity-50">
                                 <span x-text="saving ? 'Adding...' : 'Add Server'"></span>
                             </button>
-                            <button type="button" @click="closeForm()" class="px-3 py-1.5 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300">Cancel</button>
+                            <button type="button" @click="closeForm()" class="px-3 py-1.5 bg-slate-700 text-slate-200 rounded text-sm hover:bg-slate-600">Cancel</button>
                         </div>
                         <template x-if="testResult !== null">
                             <p class="mt-2 text-xs font-medium" :class="testResult ? 'text-green-600' : 'text-red-600'" x-text="testMessage"></p>
@@ -909,10 +909,10 @@
 
                 <div class="space-y-0">
                     <template x-for="server in servers" :key="server.id">
-                        <div class="flex justify-between items-center py-2.5 border-b last:border-b-0">
+                        <div class="flex justify-between items-center py-2.5 border-b last:border-b-0 border-slate-800">
                             <div>
                                 <span class="font-medium text-sm" x-text="server.label"></span>
-                                <span class="text-xs text-gray-400 ml-2" x-text="server.username + '@' + server.host + ':' + server.port"></span>
+                                <span class="text-xs text-slate-500 ml-2" x-text="server.username + '@' + server.host + ':' + server.port"></span>
                                 <span class="text-xs ml-1 px-1.5 py-0.5 rounded" :class="server.auth_type === 'key' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'" x-text="server.auth_type === 'key' ? 'key' : 'password'"></span>
                             </div>
                             <button @click="deleteServer(server)" class="text-xs text-red-600 hover:text-red-800">Remove</button>
@@ -920,7 +920,7 @@
                     </template>
                 </div>
 
-                <p x-show="servers.length === 0 && !showForm" class="text-gray-500 text-sm">No SSH servers linked. Add servers to include server activity in reports.</p>
+                <p x-show="servers.length === 0 && !showForm" class="text-slate-400 text-sm">No SSH servers linked. Add servers to include server activity in reports.</p>
 
                 @php
                     $serversJson = $client->servers->map(function ($s) {
@@ -1045,13 +1045,13 @@
             </div>
 
             <!-- Monitored Endpoints -->
-            <div class="mt-6 bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+            <div class="mt-6 card p-6">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-semibold text-gray-800">Monitored Endpoints</h3>
-                    <a href="{{ route('uptime.create', ['client_id' => $client->id]) }}" class="text-sm text-indigo-600 hover:text-indigo-800">+ Add</a>
+                    <h3 class="text-lg font-semibold text-white">Monitored Endpoints</h3>
+                    <a href="{{ route('uptime.create', ['client_id' => $client->id]) }}" class="text-sm accent-ink hover:underline">+ Add</a>
                 </div>
                 @forelse($client->monitoredEndpoints as $endpoint)
-                    <div class="flex justify-between items-center py-2.5 border-b last:border-b-0">
+                    <div class="flex justify-between items-center py-2.5 border-b last:border-b-0 border-slate-800">
                         <div class="flex items-center">
                             @php
                                 $epColor = match($endpoint->current_status) {
@@ -1063,91 +1063,91 @@
                             @endphp
                             <div class="w-2.5 h-2.5 rounded-full bg-{{ $epColor }}-500 mr-3"></div>
                             <div>
-                                <a href="{{ route('uptime.show', $endpoint) }}" class="font-medium text-sm text-indigo-600 hover:text-indigo-800">{{ $endpoint->name }}</a>
-                                <span class="text-xs text-gray-400 ml-2">{{ $endpoint->url }}</span>
+                                <a href="{{ route('uptime.show', $endpoint) }}" class="font-medium text-sm accent-ink hover:underline">{{ $endpoint->name }}</a>
+                                <span class="text-xs text-slate-500 ml-2">{{ $endpoint->url }}</span>
                             </div>
                         </div>
                         <div class="flex items-center gap-3 text-sm">
                             @if($endpoint->last_response_time_ms !== null)
-                                <span class="text-gray-500">{{ $endpoint->last_response_time_ms }}ms</span>
+                                <span class="text-slate-400">{{ $endpoint->last_response_time_ms }}ms</span>
                             @endif
-                            <span class="text-xs text-gray-400">{{ $endpoint->last_checked_at ? $endpoint->last_checked_at->diffForHumans() : 'Never' }}</span>
+                            <span class="text-xs text-slate-500">{{ $endpoint->last_checked_at ? $endpoint->last_checked_at->diffForHumans() : 'Never' }}</span>
                         </div>
                     </div>
                 @empty
-                    <p class="text-gray-500 text-sm">No endpoints monitored. Add endpoints to track uptime.</p>
+                    <p class="text-slate-400 text-sm">No endpoints monitored. Add endpoints to track uptime.</p>
                 @endforelse
             </div>
 
             <!-- Recent Scopes -->
-            <div class="mt-6 bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+            <div class="mt-6 card p-6">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-semibold text-gray-800">Recent Scopes</h3>
-                    <a href="{{ route('scopes.create', ['client_id' => $client->id]) }}" class="text-sm text-indigo-600 hover:text-indigo-800">+ New Scope</a>
+                    <h3 class="text-lg font-semibold text-white">Recent Scopes</h3>
+                    <a href="{{ route('scopes.create', ['client_id' => $client->id]) }}" class="text-sm accent-ink hover:underline">+ New Scope</a>
                 </div>
                 @forelse($client->scopes as $scope)
-                    <div class="flex justify-between items-center py-3 border-b last:border-b-0">
+                    <div class="flex justify-between items-center py-3 border-b last:border-b-0 border-slate-800">
                         <div>
-                            <a href="{{ route('scopes.show', $scope) }}" class="text-indigo-600 hover:text-indigo-800 font-medium">{{ $scope->scope_number }}</a>
-                            <span class="text-sm text-gray-500 ml-2">{{ $scope->title }}</span>
+                            <a href="{{ route('scopes.show', $scope) }}" class="accent-ink hover:underline font-medium">{{ $scope->scope_number }}</a>
+                            <span class="text-sm text-slate-400 ml-2">{{ $scope->title }}</span>
                         </div>
                         <div class="flex items-center gap-4">
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                {{ $scope->status === 'draft' ? 'bg-gray-100 text-gray-800' : '' }}
+                                {{ $scope->status === 'draft' ? 'bg-gray-100 text-white' : '' }}
                                 {{ $scope->status === 'sent' ? 'bg-blue-100 text-blue-800' : '' }}
                                 {{ $scope->status === 'approved' ? 'bg-green-100 text-green-800' : '' }}
                                 {{ $scope->status === 'archived' ? 'bg-yellow-100 text-yellow-800' : '' }}
                             ">{{ ucfirst($scope->status) }}</span>
                             <span class="text-sm font-medium">{{ $scope->currency_symbol }}{{ number_format($scope->total_price, 2) }}</span>
-                            <span class="text-xs text-gray-400">{{ $scope->created_at->format('M d, Y') }}</span>
+                            <span class="text-xs text-slate-500">{{ $scope->created_at->format('M d, Y') }}</span>
                         </div>
                     </div>
                 @empty
-                    <p class="text-gray-500 text-sm">No scopes yet.</p>
+                    <p class="text-slate-400 text-sm">No scopes yet.</p>
                 @endforelse
             </div>
 
             <!-- Recent Reports -->
-            <div class="mt-6 bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+            <div class="mt-6 card p-6">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-semibold text-gray-800">Recent Reports</h3>
-                    <a href="{{ route('reports.create', ['client_id' => $client->id]) }}" class="text-sm text-indigo-600 hover:text-indigo-800">+ New Report</a>
+                    <h3 class="text-lg font-semibold text-white">Recent Reports</h3>
+                    <a href="{{ route('reports.create', ['client_id' => $client->id]) }}" class="text-sm accent-ink hover:underline">+ New Report</a>
                 </div>
                 @forelse($client->reports()->latest()->take(5)->get() as $report)
-                    <div class="flex justify-between items-center py-3 border-b last:border-b-0">
+                    <div class="flex justify-between items-center py-3 border-b last:border-b-0 border-slate-800">
                         <div>
-                            <a href="{{ route('reports.show', $report) }}" class="text-indigo-600 hover:text-indigo-800 font-medium">{{ $report->report_number }}</a>
-                            <span class="text-sm text-gray-500 ml-2">{{ $report->title }}</span>
+                            <a href="{{ route('reports.show', $report) }}" class="accent-ink hover:underline font-medium">{{ $report->report_number }}</a>
+                            <span class="text-sm text-slate-400 ml-2">{{ $report->title }}</span>
                         </div>
                         <div class="flex items-center gap-4">
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                {{ $report->status === 'draft' ? 'bg-gray-100 text-gray-800' : '' }}
+                                {{ $report->status === 'draft' ? 'bg-gray-100 text-white' : '' }}
                                 {{ $report->status === 'generated' ? 'bg-blue-100 text-blue-800' : '' }}
                                 {{ $report->status === 'sent' ? 'bg-green-100 text-green-800' : '' }}
                                 {{ $report->status === 'archived' ? 'bg-yellow-100 text-yellow-800' : '' }}
                             ">{{ ucfirst($report->status) }}</span>
-                            <span class="text-sm text-gray-500">{{ $report->commit_count }} commits</span>
+                            <span class="text-sm text-slate-400">{{ $report->commit_count }} commits</span>
                         </div>
                     </div>
                 @empty
-                    <p class="text-gray-500 text-sm">No reports yet.</p>
+                    <p class="text-slate-400 text-sm">No reports yet.</p>
                 @endforelse
             </div>
 
             <!-- Recent Invoices -->
-            <div class="mt-6 bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">Recent Invoices</h3>
+            <div class="mt-6 card p-6">
+                <h3 class="text-lg font-semibold text-white mb-4">Recent Invoices</h3>
                 @forelse($client->invoices as $invoice)
-                    <div class="flex justify-between items-center py-3 border-b last:border-b-0">
+                    <div class="flex justify-between items-center py-3 border-b last:border-b-0 border-slate-800">
                         <div>
-                            <a href="{{ route('invoices.show', $invoice) }}" class="text-indigo-600 hover:text-indigo-800 font-medium">{{ $invoice->invoice_number }}</a>
-                            <span class="text-sm text-gray-500 ml-2">{{ $invoice->issue_date->format('M d, Y') }}</span>
+                            <a href="{{ route('invoices.show', $invoice) }}" class="accent-ink hover:underline font-medium">{{ $invoice->invoice_number }}</a>
+                            <span class="text-sm text-slate-400 ml-2">{{ $invoice->issue_date->format('M d, Y') }}</span>
                         </div>
                         <div class="flex items-center gap-4">
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                                 {{ $invoice->status === 'paid' ? 'bg-green-100 text-green-800' : '' }}
                                 {{ $invoice->status === 'sent' ? 'bg-blue-100 text-blue-800' : '' }}
-                                {{ $invoice->status === 'draft' ? 'bg-gray-100 text-gray-800' : '' }}
+                                {{ $invoice->status === 'draft' ? 'bg-gray-100 text-white' : '' }}
                                 {{ $invoice->status === 'overdue' ? 'bg-red-100 text-red-800' : '' }}
                                 {{ $invoice->status === 'cancelled' ? 'bg-yellow-100 text-yellow-800' : '' }}
                             ">{{ ucfirst($invoice->status) }}</span>
@@ -1155,18 +1155,18 @@
                         </div>
                     </div>
                 @empty
-                    <p class="text-gray-500 text-sm">No invoices yet.</p>
+                    <p class="text-slate-400 text-sm">No invoices yet.</p>
                 @endforelse
             </div>
 
             <!-- Delete Client -->
-            <div class="mt-6 bg-white overflow-hidden shadow-sm sm:rounded-lg p-6" x-data="{ confirmDelete: false }">
-                <h3 class="text-lg font-semibold text-red-700 mb-2">Danger Zone</h3>
-                <p class="text-sm text-gray-600 mb-4">Deleting this client will permanently remove all associated data.</p>
+            <div class="mt-6 card p-6" x-data="{ confirmDelete: false }">
+                <h3 class="text-lg font-semibold text-rose-400 mb-2">Danger Zone</h3>
+                <p class="text-sm text-slate-300 mb-4">Deleting this client will permanently remove all associated data.</p>
 
                 <button @click="confirmDelete = true" x-show="!confirmDelete" class="px-4 py-2 bg-red-600 text-white rounded-md text-xs font-semibold uppercase hover:bg-red-700 transition">Delete Client</button>
 
-                <div x-show="confirmDelete" x-cloak class="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div x-show="confirmDelete" x-cloak class="p-4 bg-rose-950/40 border border-rose-900/50 rounded-lg">
                     <p class="text-sm font-semibold text-red-800 mb-2">This will permanently delete:</p>
                     <ul class="text-sm text-red-700 list-disc list-inside mb-3 space-y-0.5">
                         <li>{{ $client->contacts->count() }} contact(s)</li>
@@ -1183,10 +1183,10 @@
                     <form method="POST" action="{{ route('clients.destroy', $client) }}" x-data="{ typed: '' }">
                         @csrf
                         @method('DELETE')
-                        <input type="text" x-model="typed" placeholder="Type client name to confirm" class="block w-full rounded-md border-red-300 shadow-sm text-sm focus:border-red-500 focus:ring-red-500 mb-3">
+                        <input type="text" x-model="typed" placeholder="Type client name to confirm" class="field text-sm mb-3">
                         <div class="flex gap-2">
                             <button type="submit" :disabled="typed !== '{{ addslashes($client->company_name) }}'" class="px-4 py-2 bg-red-600 text-white rounded-md text-xs font-semibold uppercase hover:bg-red-700 transition disabled:opacity-40 disabled:cursor-not-allowed">Permanently Delete</button>
-                            <button type="button" @click="confirmDelete = false" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md text-xs font-semibold uppercase hover:bg-gray-300 transition">Cancel</button>
+                            <button type="button" @click="confirmDelete = false" class="px-4 py-2 bg-slate-700 text-slate-200 rounded-md text-xs font-semibold uppercase hover:bg-slate-600 transition">Cancel</button>
                         </div>
                     </form>
                 </div>
