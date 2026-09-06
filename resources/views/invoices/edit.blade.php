@@ -41,7 +41,11 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div></div>
+                        <div>
+                            <x-input-label for="title" value="Title (optional)" />
+                            <x-text-input id="title" name="title" type="text" class="mt-1 block w-full" :value="old('title', $invoice->title)" placeholder="e.g. Maintenance Services, March" />
+                            <x-input-error :messages="$errors->get('title')" class="mt-2" />
+                        </div>
                         <div>
                             <x-input-label for="issue_date" value="Issue Date" />
                             <x-text-input id="issue_date" name="issue_date" type="date" class="mt-1 block w-full" :value="old('issue_date', $invoice->issue_date->format('Y-m-d'))" required />

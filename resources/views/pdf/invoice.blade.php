@@ -17,6 +17,7 @@
 
         .invoice-title { font-size: 22px; font-weight: bold; color: #4f46e5; letter-spacing: 1px; }
         .invoice-number { font-size: 12px; color: #6b7280; margin-top: 4px; }
+        .invoice-subtitle { font-size: 13px; font-weight: bold; color: #111827; margin-top: 4px; }
         .status-badge { display: inline-block; padding: 3px 12px; border-radius: 12px; font-size: 10px; font-weight: bold; text-transform: uppercase; margin-top: 6px; }
         .status-draft { background: #f3f4f6; color: #374151; }
         .status-sent { background: #dbeafe; color: #1e40af; }
@@ -86,6 +87,9 @@
             <div class="header-right">
                 <div class="invoice-title">INVOICE</div>
                 <div class="invoice-number">{{ $invoice->invoice_number }}</div>
+                @if($invoice->title)
+                    <div class="invoice-subtitle">{{ $invoice->title }}</div>
+                @endif
                 <div class="status-badge status-{{ $invoice->status }}">{{ ucfirst($invoice->status) }}</div>
             </div>
         </div>

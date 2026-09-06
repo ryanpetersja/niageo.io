@@ -93,7 +93,12 @@
                         <tbody class="divide-y divide-gray-200">
                             @forelse($invoices as $inv)
                                 <tr class="hover:bg-gray-50">
-                                    <td class="px-4 py-3"><a href="{{ route('invoices.show', $inv) }}" class="text-indigo-600 hover:text-indigo-800 font-medium">{{ $inv->invoice_number }}</a></td>
+                                    <td class="px-4 py-3">
+                                        <a href="{{ route('invoices.show', $inv) }}" class="text-indigo-600 hover:text-indigo-800 font-medium">{{ $inv->invoice_number }}</a>
+                                        @if($inv->title)
+                                            <div class="text-xs text-gray-500">{{ $inv->title }}</div>
+                                        @endif
+                                    </td>
                                     <td class="px-4 py-3 text-sm text-gray-600">{{ $inv->client->company_name }}</td>
                                     <td class="px-4 py-3 text-sm text-gray-600">{{ $inv->issue_date->format('M d, Y') }}</td>
                                     <td class="px-4 py-3 text-sm text-gray-600">{{ $inv->due_date->format('M d, Y') }}</td>

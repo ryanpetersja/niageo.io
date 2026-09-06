@@ -67,6 +67,7 @@ class InvoiceController extends Controller
     {
         $validated = $request->validate([
             'client_id' => 'required|exists:clients,id',
+            'title' => 'nullable|string|max:255',
             'issue_date' => 'required|date',
             'due_date' => 'required|date|after_or_equal:issue_date',
             'tax_rate' => 'nullable|numeric|min:0|max:100',
@@ -80,6 +81,7 @@ class InvoiceController extends Controller
 
         $invoice = $this->invoiceService->create([
             'client_id' => $validated['client_id'],
+            'title' => $validated['title'] ?? null,
             'issue_date' => $validated['issue_date'],
             'due_date' => $validated['due_date'],
             'tax_rate' => $validated['tax_rate'] ?? 0,
@@ -127,6 +129,7 @@ class InvoiceController extends Controller
 
         $validated = $request->validate([
             'client_id' => 'required|exists:clients,id',
+            'title' => 'nullable|string|max:255',
             'issue_date' => 'required|date',
             'due_date' => 'required|date|after_or_equal:issue_date',
             'tax_rate' => 'nullable|numeric|min:0|max:100',
@@ -140,6 +143,7 @@ class InvoiceController extends Controller
 
         $this->invoiceService->update($invoice, [
             'client_id' => $validated['client_id'],
+            'title' => $validated['title'] ?? null,
             'issue_date' => $validated['issue_date'],
             'due_date' => $validated['due_date'],
             'tax_rate' => $validated['tax_rate'] ?? 0,
