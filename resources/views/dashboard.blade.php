@@ -1,187 +1,171 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">Dashboard</h2>
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="font-bold text-2xl text-white leading-tight">Dashboard</h2>
+                <p class="text-sm text-muted mt-0.5">{{ now()->format('l, F j, Y') }}</p>
+            </div>
+            <a href="{{ route('invoices.create') }}" class="btn btn-primary">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                New Invoice
+            </a>
+        </div>
     </x-slot>
 
     <div class="py-6">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             @if(session('success'))
-                <div class="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">{{ session('success') }}</div>
+                <div class="mb-4 rounded-lg px-4 py-3 text-sm" style="background: var(--good-soft); color: var(--good);">{{ session('success') }}</div>
             @endif
 
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                    <div class="text-sm font-medium text-gray-500">Total Revenue</div>
-                    <div class="mt-1 text-2xl font-bold text-green-600">${{ number_format($metrics['total_revenue'], 2) }}</div>
-                </div>
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                    <div class="text-sm font-medium text-gray-500">Outstanding</div>
-                    <div class="mt-1 text-2xl font-bold text-yellow-600">${{ number_format($metrics['total_outstanding'], 2) }}</div>
-                </div>
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                    <div class="text-sm font-medium text-gray-500">Overdue</div>
-                    <div class="mt-1 text-2xl font-bold text-red-600">${{ number_format($metrics['total_overdue'], 2) }}</div>
-                    @if($metrics['overdue_count'] > 0)
-                        <div class="text-xs text-red-500 mt-1">{{ $metrics['overdue_count'] }} invoice(s)</div>
-                    @endif
-                </div>
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                    <div class="text-sm font-medium text-gray-500">Collection Rate</div>
-                    <div class="mt-1 text-2xl font-bold text-indigo-600">{{ $metrics['collection_rate'] }}%</div>
-                    <div class="text-xs text-gray-400 mt-1">{{ $metrics['paid_count'] }}/{{ $metrics['invoice_count'] }} invoices</div>
-                </div>
+            {{-- Stat cards --}}
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                @php
+                    $stats = [
+                        ['label' => 'Total Revenue', 'value' => '$'.number_format($metrics['total_revenue'], 2), 'color' => 'var(--good)', 'soft' => 'var(--good-soft)', 'sub' => 'Collected to date', 'icon' => '<path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>'],
+                        ['label' => 'Outstanding', 'value' => '$'.number_format($metrics['total_outstanding'], 2), 'color' => 'var(--warn)', 'soft' => 'var(--warn-soft)', 'sub' => 'Awaiting payment', 'icon' => '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>'],
+                        ['label' => 'Overdue', 'value' => '$'.number_format($metrics['total_overdue'], 2), 'color' => 'var(--danger)', 'soft' => 'var(--danger-soft)', 'sub' => ($metrics['overdue_count'] ?? 0).' invoice(s)', 'icon' => '<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/>'],
+                        ['label' => 'Collection Rate', 'value' => $metrics['collection_rate'].'%', 'color' => 'var(--accent-ink)', 'soft' => 'var(--accent-soft)', 'sub' => ($metrics['paid_count'] ?? 0).'/'.($metrics['invoice_count'] ?? 0).' invoices', 'icon' => '<path d="M22 12A10 10 0 1 1 12 2"/><path d="M22 4 12 14.01l-3-3"/>'],
+                    ];
+                @endphp
+                @foreach($stats as $s)
+                    <div class="card card-hover p-5">
+                        <div class="flex items-start justify-between">
+                            <span class="text-xs font-semibold uppercase tracking-wide text-muted">{{ $s['label'] }}</span>
+                            <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg" style="background: {{ $s['soft'] }}; color: {{ $s['color'] }};">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{!! $s['icon'] !!}</svg>
+                            </span>
+                        </div>
+                        <div class="mt-3 text-2xl font-bold" style="color: {{ $s['color'] }};">{{ $s['value'] }}</div>
+                        <div class="mt-1 text-xs text-faint">{{ $s['sub'] }}</div>
+                    </div>
+                @endforeach
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Monthly Revenue ({{ now()->year }})</h3>
+            {{-- Chart + Overdue --}}
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div class="card p-6">
+                    <h3 class="text-base font-semibold text-white mb-4">Monthly Revenue <span class="text-faint font-normal">({{ now()->year }})</span></h3>
                     <canvas id="revenueChart" height="200"></canvas>
                 </div>
 
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Overdue Invoices</h3>
-                    @forelse($overdueInvoices as $inv)
-                        <a href="{{ route('invoices.show', $inv) }}" class="block p-3 mb-2 bg-red-50 rounded-lg hover:bg-red-100 transition">
-                            <div class="flex justify-between items-center">
+                <div class="card p-6">
+                    <h3 class="text-base font-semibold text-white mb-4">Overdue Invoices</h3>
+                    <div class="space-y-1">
+                        @forelse($overdueInvoices as $inv)
+                            <a href="{{ route('invoices.show', $inv) }}" class="row-item flex items-center justify-between p-3 -mx-1">
                                 <div>
-                                    <span class="font-medium text-gray-900">{{ $inv->invoice_number }}</span>
-                                    <span class="text-sm text-gray-500 ml-2">{{ $inv->client->company_name }}</span>
+                                    <span class="font-medium text-slate-100">{{ $inv->invoice_number }}</span>
+                                    <span class="text-sm text-muted ml-2">{{ $inv->client->company_name }}</span>
                                 </div>
                                 <div class="text-right">
-                                    <div class="font-semibold text-red-600">${{ number_format($inv->balance_due, 2) }}</div>
-                                    <div class="text-xs text-red-500">Due {{ $inv->due_date->diffForHumans() }}</div>
+                                    <div class="font-semibold" style="color: var(--danger);">${{ number_format($inv->balance_due, 2) }}</div>
+                                    <div class="text-xs text-faint">Due {{ $inv->due_date->diffForHumans() }}</div>
                                 </div>
-                            </div>
-                        </a>
-                    @empty
-                        <p class="text-gray-500 text-sm">No overdue invoices.</p>
-                    @endforelse
+                            </a>
+                        @empty
+                            <p class="text-muted text-sm py-6 text-center">No overdue invoices. 🎉</p>
+                        @endforelse
+                    </div>
                 </div>
             </div>
 
-            <!-- Uptime Monitoring -->
-            <div class="mt-6 bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+            {{-- Uptime --}}
+            <div class="card p-6 mb-6">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-semibold text-gray-800">Uptime Monitoring</h3>
-                    <a href="{{ route('uptime.index') }}" class="text-sm text-indigo-600 hover:text-indigo-800">View All</a>
+                    <h3 class="text-base font-semibold text-white">Uptime Monitoring</h3>
+                    <a href="{{ route('uptime.index') }}" class="text-sm accent-ink hover:underline">View all →</a>
                 </div>
-
-                <!-- Summary row -->
-                <div class="flex items-center gap-6 mb-4">
-                    <div class="flex items-center gap-2">
-                        <div class="w-2.5 h-2.5 rounded-full bg-green-500"></div>
-                        <span class="text-sm text-gray-600"><span class="font-semibold text-green-600">{{ $uptimeSummary['up'] }}</span> Up</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <div class="w-2.5 h-2.5 rounded-full bg-yellow-500"></div>
-                        <span class="text-sm text-gray-600"><span class="font-semibold text-yellow-600">{{ $uptimeSummary['degraded'] }}</span> Degraded</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <div class="w-2.5 h-2.5 rounded-full bg-red-500"></div>
-                        <span class="text-sm text-gray-600"><span class="font-semibold text-red-600">{{ $uptimeSummary['down'] }}</span> Down</span>
-                    </div>
-                    <span class="text-sm text-gray-400">{{ $uptimeSummary['total'] }} total</span>
+                <div class="flex items-center gap-6 mb-4 flex-wrap">
+                    <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full" style="background: var(--good);"></span><span class="text-sm text-muted"><span class="font-semibold" style="color: var(--good);">{{ $uptimeSummary['up'] }}</span> Up</span></div>
+                    <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full" style="background: var(--warn);"></span><span class="text-sm text-muted"><span class="font-semibold" style="color: var(--warn);">{{ $uptimeSummary['degraded'] }}</span> Degraded</span></div>
+                    <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full" style="background: var(--danger);"></span><span class="text-sm text-muted"><span class="font-semibold" style="color: var(--danger);">{{ $uptimeSummary['down'] }}</span> Down</span></div>
+                    <span class="text-sm text-faint">{{ $uptimeSummary['total'] }} total</span>
                 </div>
-
                 @if($troubledEndpoints->count() > 0)
-                    @foreach($troubledEndpoints as $ep)
-                        @php
-                            $epColor = $ep->current_status === 'down' ? 'red' : 'yellow';
-                            $epBg = $ep->current_status === 'down' ? 'bg-red-50' : 'bg-yellow-50';
-                        @endphp
-                        <a href="{{ route('uptime.show', $ep) }}" class="block p-3 mb-2 {{ $epBg }} rounded-lg hover:opacity-80 transition">
-                            <div class="flex justify-between items-center">
+                    <div class="space-y-1">
+                        @foreach($troubledEndpoints as $ep)
+                            @php $c = $ep->current_status === 'down' ? 'var(--danger)' : 'var(--warn)'; @endphp
+                            <a href="{{ route('uptime.show', $ep) }}" class="row-item flex justify-between items-center p-3 -mx-1">
                                 <div class="flex items-center">
-                                    <div class="w-2.5 h-2.5 rounded-full bg-{{ $epColor }}-500 mr-3"></div>
-                                    <div>
-                                        <span class="font-medium text-gray-900">{{ $ep->name }}</span>
-                                        <span class="text-sm text-gray-500 ml-2">{{ $ep->client->company_name }}</span>
-                                    </div>
+                                    <span class="w-2.5 h-2.5 rounded-full mr-3" style="background: {{ $c }};"></span>
+                                    <div><span class="font-medium text-slate-100">{{ $ep->name }}</span><span class="text-sm text-muted ml-2">{{ $ep->client->company_name }}</span></div>
                                 </div>
                                 <div class="text-right">
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-{{ $epColor }}-100 text-{{ $epColor }}-800">{{ ucfirst($ep->current_status) }}</span>
-                                    <div class="text-xs text-gray-400 mt-0.5">{{ $ep->last_checked_at ? $ep->last_checked_at->diffForHumans() : 'Never checked' }}</div>
+                                    <span class="badge {{ $ep->current_status === 'down' ? 'badge-danger' : 'badge-warn' }}">{{ ucfirst($ep->current_status) }}</span>
+                                    <div class="text-xs text-faint mt-0.5">{{ $ep->last_checked_at ? $ep->last_checked_at->diffForHumans() : 'Never checked' }}</div>
                                 </div>
-                            </div>
-                        </a>
-                    @endforeach
+                            </a>
+                        @endforeach
+                    </div>
                 @else
                     @if($uptimeSummary['total'] > 0)
-                        <p class="text-green-600 text-sm font-medium">All endpoints are healthy.</p>
+                        <p class="text-sm font-medium" style="color: var(--good);">All endpoints are healthy.</p>
                     @else
-                        <p class="text-gray-500 text-sm">No endpoints monitored yet. <a href="{{ route('uptime.create') }}" class="text-indigo-600 hover:text-indigo-800">Add one</a></p>
+                        <p class="text-muted text-sm">No endpoints monitored yet. <a href="{{ route('uptime.create') }}" class="accent-ink hover:underline">Add one</a></p>
                     @endif
                 @endif
             </div>
 
-            <!-- Subscription Alerts -->
-            <div class="mt-6 bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+            {{-- Subscriptions --}}
+            <div class="card p-6 mb-6">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-semibold text-gray-800">Subscription Alerts</h3>
-                    <a href="{{ route('subscriptions.index') }}" class="text-sm text-indigo-600 hover:text-indigo-800">View All</a>
+                    <h3 class="text-base font-semibold text-white">Subscription Alerts</h3>
+                    <a href="{{ route('subscriptions.index') }}" class="text-sm accent-ink hover:underline">View all →</a>
                 </div>
-
                 @if($subscriptionAlerts->count() > 0)
-                    @foreach($subscriptionAlerts as $sub)
-                        @php
-                            $subColor = $sub->status === 'overdue' ? 'red' : 'yellow';
-                            $subBg = $sub->status === 'overdue' ? 'bg-red-50' : 'bg-yellow-50';
-                        @endphp
-                        <div class="flex justify-between items-center p-3 mb-2 {{ $subBg }} rounded-lg">
-                            <div class="flex items-center">
-                                <div class="w-2.5 h-2.5 rounded-full bg-{{ $subColor }}-500 mr-3"></div>
-                                <div>
-                                    <span class="font-medium text-gray-900">{{ $sub->service_name }}</span>
-                                    <span class="text-xs text-gray-500 ml-2">{{ $sub->category_label }}</span>
+                    <div class="space-y-1">
+                        @foreach($subscriptionAlerts as $sub)
+                            @php $c = $sub->status === 'overdue' ? 'var(--danger)' : 'var(--warn)'; @endphp
+                            <div class="row-item flex justify-between items-center p-3 -mx-1">
+                                <div class="flex items-center">
+                                    <span class="w-2.5 h-2.5 rounded-full mr-3" style="background: {{ $c }};"></span>
+                                    <div><span class="font-medium text-slate-100">{{ $sub->service_name }}</span><span class="text-xs text-muted ml-2">{{ $sub->category_label }}</span></div>
                                 </div>
-                            </div>
-                            <div class="flex items-center gap-4">
-                                <div class="text-right">
-                                    <span class="text-sm font-semibold text-gray-800">${{ number_format($sub->amount, 2) }}</span>
-                                    <div class="text-xs text-{{ $subColor }}-600">
-                                        {{ $sub->status === 'overdue' ? 'Overdue' : 'Due' }} {{ $sub->next_due_date->format('M j') }}
-                                        @if($sub->next_due_date->isPast())
-                                            ({{ $sub->next_due_date->diffForHumans() }})
-                                        @endif
+                                <div class="flex items-center gap-4">
+                                    <div class="text-right">
+                                        <span class="text-sm font-semibold text-slate-200">${{ number_format($sub->amount, 2) }}</span>
+                                        <div class="text-xs" style="color: {{ $c }};">{{ $sub->status === 'overdue' ? 'Overdue' : 'Due' }} {{ $sub->next_due_date->format('M j') }}</div>
                                     </div>
+                                    <form method="POST" action="{{ route('subscriptions.mark-paid', $sub) }}">
+                                        @csrf
+                                        <button type="submit" class="btn btn-sm" style="background: var(--good-soft); color: var(--good);">Pay</button>
+                                    </form>
                                 </div>
-                                <form method="POST" action="{{ route('subscriptions.mark-paid', $sub) }}">
-                                    @csrf
-                                    <button type="submit" class="text-xs text-green-600 hover:text-green-800 font-medium px-2 py-1 bg-green-50 rounded hover:bg-green-100 transition">Pay</button>
-                                </form>
                             </div>
-                        </div>
-                    @endforeach
+                        @endforeach
+                    </div>
                 @else
-                    <p class="text-green-600 text-sm font-medium">All subscriptions are up to date.</p>
+                    <p class="text-sm font-medium" style="color: var(--good);">All subscriptions are up to date.</p>
                 @endif
             </div>
 
-            <div class="mt-6 bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+            {{-- Recent invoices --}}
+            <div class="card p-6">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-semibold text-gray-800">Recent Invoices</h3>
-                    <a href="{{ route('invoices.create') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 transition">New Invoice</a>
+                    <h3 class="text-base font-semibold text-white">Recent Invoices</h3>
+                    <a href="{{ route('invoices.index') }}" class="text-sm accent-ink hover:underline">View all →</a>
                 </div>
-                @forelse($recentInvoices as $inv)
-                    <div class="flex justify-between items-center py-3 border-b last:border-b-0">
-                        <div>
-                            <a href="{{ route('invoices.show', $inv) }}" class="text-indigo-600 hover:text-indigo-800 font-medium">{{ $inv->invoice_number }}</a>
-                            <span class="text-sm text-gray-500 ml-2">{{ $inv->client->company_name }}</span>
+                <div class="divide-hair">
+                    @forelse($recentInvoices as $inv)
+                        <div class="flex justify-between items-center py-3">
+                            <div>
+                                <a href="{{ route('invoices.show', $inv) }}" class="accent-ink hover:underline font-medium">{{ $inv->invoice_number }}</a>
+                                <span class="text-sm text-muted ml-2">{{ $inv->client->company_name }}</span>
+                                @if($inv->title)<span class="text-xs text-faint ml-2">· {{ $inv->title }}</span>@endif
+                            </div>
+                            <div class="flex items-center gap-4">
+                                @php
+                                    $map = ['paid' => 'badge-good', 'sent' => 'badge-info', 'draft' => 'badge-gray', 'overdue' => 'badge-danger', 'cancelled' => 'badge-warn'];
+                                @endphp
+                                <span class="badge {{ $map[$inv->status] ?? 'badge-gray' }}">{{ ucfirst($inv->status) }}</span>
+                                <span class="text-sm font-medium text-slate-200">${{ number_format($inv->total, 2) }}</span>
+                            </div>
                         </div>
-                        <div class="flex items-center gap-4">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                {{ $inv->status === 'paid' ? 'bg-green-100 text-green-800' : '' }}
-                                {{ $inv->status === 'sent' ? 'bg-blue-100 text-blue-800' : '' }}
-                                {{ $inv->status === 'draft' ? 'bg-gray-100 text-gray-800' : '' }}
-                                {{ $inv->status === 'overdue' ? 'bg-red-100 text-red-800' : '' }}
-                                {{ $inv->status === 'cancelled' ? 'bg-yellow-100 text-yellow-800' : '' }}
-                            ">{{ ucfirst($inv->status) }}</span>
-                            <span class="text-sm font-medium">${{ number_format($inv->total, 2) }}</span>
-                        </div>
-                    </div>
-                @empty
-                    <p class="text-gray-500 text-sm">No invoices yet.</p>
-                @endforelse
+                    @empty
+                        <p class="text-muted text-sm">No invoices yet.</p>
+                    @endforelse
+                </div>
             </div>
         </div>
     </div>
@@ -190,18 +174,26 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const ctx = document.getElementById('revenueChart');
-            if (ctx) {
+            if (ctx && window.Chart) {
                 const data = @json($monthlyRevenue);
+                const grid = 'rgba(148,163,184,0.10)';
+                const tick = '#9aa6b8';
                 new Chart(ctx, {
                     type: 'bar',
                     data: {
                         labels: data.map(d => d.month),
-                        datasets: [{ label: 'Revenue', data: data.map(d => d.total), backgroundColor: 'rgba(79, 70, 229, 0.8)', borderRadius: 4 }]
+                        datasets: [{
+                            label: 'Revenue', data: data.map(d => d.total),
+                            backgroundColor: 'rgba(99, 102, 241, 0.85)', hoverBackgroundColor: '#818cf8', borderRadius: 6, maxBarThickness: 34
+                        }]
                     },
                     options: {
                         responsive: true,
-                        plugins: { legend: { display: false } },
-                        scales: { y: { beginAtZero: true, ticks: { callback: v => '$' + v.toLocaleString() } } }
+                        plugins: { legend: { display: false }, tooltip: { backgroundColor: '#18212f', borderColor: 'rgba(148,163,184,0.24)', borderWidth: 1, titleColor: '#e6eaf2', bodyColor: '#9aa6b8', callbacks: { label: c => '$' + c.parsed.y.toLocaleString() } } },
+                        scales: {
+                            x: { grid: { display: false }, ticks: { color: tick } },
+                            y: { beginAtZero: true, grid: { color: grid }, border: { display: false }, ticks: { color: tick, callback: v => '$' + v.toLocaleString() } }
+                        }
                     }
                 });
             }
