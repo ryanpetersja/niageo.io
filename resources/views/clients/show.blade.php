@@ -1,9 +1,9 @@
 <x-app-layout>
     <x-slot name="header">
         <x-breadcrumbs :items="[['label' => 'Clients', 'url' => route('clients.index')], ['label' => $client->company_name]]" />
-        <div class="flex justify-between items-center">
+        <div class="flex flex-wrap justify-between items-center gap-3">
             <h2 class="font-semibold text-xl text-white leading-tight">{{ $client->company_name }}</h2>
-            <div class="flex gap-2 items-center">
+            <div class="flex flex-wrap gap-2 items-center">
                 <div x-data="{ open: false, from: '{{ now()->startOfYear()->format('Y-m-d') }}', to: '{{ now()->format('Y-m-d') }}' }" class="relative">
                     <button @click="open = !open" type="button" class="inline-flex items-center px-4 py-2 bg-amber-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-amber-700 transition">
                         Generate Statement
@@ -126,7 +126,7 @@
 
                             <!-- Items Table -->
                             <div class="overflow-x-auto">
-                                <table class="w-full text-sm">
+                                <table class="table-cards w-full text-sm">
                                     <thead>
                                         <tr class="text-left text-xs text-slate-400 uppercase tracking-wider">
                                             <th class="pb-2">Description</th>
@@ -139,17 +139,17 @@
                                     <tbody>
                                         <template x-for="(item, index) in form.items" :key="index">
                                             <tr>
-                                                <td class="py-1 pr-2">
+                                                <td data-label="Description" class="py-1 pr-2">
                                                     <input type="text" x-model="item.description" placeholder="Line item description" class="field text-sm" required>
                                                 </td>
-                                                <td class="py-1 pr-2">
+                                                <td data-label="Qty" class="py-1 pr-2">
                                                     <input type="number" x-model.number="item.quantity" step="0.01" min="0.01" class="field text-sm" required>
                                                 </td>
-                                                <td class="py-1 pr-2">
+                                                <td data-label="Price" class="py-1 pr-2">
                                                     <input type="number" x-model.number="item.unit_price" step="0.01" min="0" class="field text-sm" required>
                                                 </td>
-                                                <td class="py-1 text-right text-slate-300 text-sm" x-text="'$' + ((item.quantity || 0) * (item.unit_price || 0)).toFixed(2)"></td>
-                                                <td class="py-1 pl-1">
+                                                <td data-label="Total" class="py-1 text-right text-slate-300 text-sm" x-text="'$' + ((item.quantity || 0) * (item.unit_price || 0)).toFixed(2)"></td>
+                                                <td data-label="" class="py-1 pl-1">
                                                     <button type="button" @click="removeItem(index)" x-show="form.items.length > 1" class="text-red-400 hover:text-red-600" title="Remove item">&times;</button>
                                                 </td>
                                             </tr>

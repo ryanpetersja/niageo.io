@@ -1,12 +1,12 @@
 <x-app-layout>
     <x-slot name="header">
         <x-breadcrumbs :items="[['label' => 'Monitoring', 'url' => route('uptime.index')], ['label' => $endpoint->name]]" />
-        <div class="flex justify-between items-center">
+        <div class="flex flex-wrap justify-between items-center gap-3">
             <div class="flex items-center gap-3">
                 <div class="w-3 h-3 rounded-full bg-{{ $endpoint->status_color }}-500"></div>
                 <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ $endpoint->name }}</h2>
             </div>
-            <div class="flex gap-2 items-center">
+            <div class="flex flex-wrap gap-2 items-center">
                 <form method="POST" action="{{ route('uptime.check', $endpoint) }}">
                     @csrf
                     <button type="submit" class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 transition">Check Now</button>
@@ -57,7 +57,7 @@
                     <h3 class="text-lg font-semibold text-gray-800">Check History <span class="text-sm font-normal text-gray-400">(last 100)</span></h3>
                 </div>
                 <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
+                    <table class="table-cards min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Checked At</th>
@@ -78,13 +78,13 @@
                                     };
                                 @endphp
                                 <tr>
-                                    <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-600">{{ $check->checked_at->format('M d, Y H:i:s') }}</td>
-                                    <td class="px-6 py-3 whitespace-nowrap">
+                                    <td data-label="Checked At" class="px-6 py-3 whitespace-nowrap text-sm text-gray-600">{{ $check->checked_at->format('M d, Y H:i:s') }}</td>
+                                    <td data-label="Status" class="px-6 py-3 whitespace-nowrap">
                                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-{{ $checkColor }}-100 text-{{ $checkColor }}-800">{{ ucfirst($check->status) }}</span>
                                     </td>
-                                    <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-600">{{ $check->response_time_ms !== null ? $check->response_time_ms . 'ms' : '--' }}</td>
-                                    <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-600">{{ $check->status_code ?? '--' }}</td>
-                                    <td class="px-6 py-3 text-sm text-red-600 max-w-xs truncate" title="{{ $check->error_message }}">{{ $check->error_message ?? '--' }}</td>
+                                    <td data-label="Response Time" class="px-6 py-3 whitespace-nowrap text-sm text-gray-600">{{ $check->response_time_ms !== null ? $check->response_time_ms . 'ms' : '--' }}</td>
+                                    <td data-label="Status Code" class="px-6 py-3 whitespace-nowrap text-sm text-gray-600">{{ $check->status_code ?? '--' }}</td>
+                                    <td data-label="Error" class="px-6 py-3 text-sm text-red-600 max-w-xs truncate" title="{{ $check->error_message }}">{{ $check->error_message ?? '--' }}</td>
                                 </tr>
                             @empty
                                 <tr>

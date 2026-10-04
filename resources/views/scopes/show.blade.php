@@ -1,9 +1,9 @@
 <x-app-layout>
     <x-slot name="header">
         <x-breadcrumbs :items="[['label' => 'Scopes', 'url' => route('scopes.index')], ['label' => $scope->scope_number]]" />
-        <div class="flex justify-between items-center">
+        <div class="flex flex-wrap justify-between items-center gap-3">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ $scope->scope_number }}</h2>
-            <div class="flex gap-2">
+            <div class="flex flex-wrap gap-2">
                 @if(in_array($scope->status, ['draft', 'sent', 'approved']))
                     <a href="{{ route('scopes.pdf', $scope) }}" target="_blank" class="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-md text-xs font-semibold uppercase hover:bg-gray-700 transition">Preview PDF</a>
                     <a href="{{ route('scopes.pdf.download', $scope) }}" class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md text-xs font-semibold uppercase hover:bg-green-700 transition">Download PDF</a>

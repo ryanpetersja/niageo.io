@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <x-breadcrumbs :items="[['label' => 'Settings'], ['label' => 'Report Preferences']]" />
-        <div class="flex justify-between items-center">
+        <div class="flex flex-wrap justify-between items-center gap-3">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">Report AI Preferences</h2>
             <a href="{{ route('settings.branding') }}" class="text-sm text-indigo-600 hover:text-indigo-800">Back to Settings</a>
         </div>
@@ -43,7 +43,7 @@
 
                 @if($recentFeedback->count() > 0)
                     <div class="overflow-x-auto">
-                        <table class="min-w-full text-sm">
+                        <table class="table-cards min-w-full text-sm">
                             <thead>
                                 <tr class="border-b">
                                     <th class="py-2 text-left text-xs font-medium text-gray-500 uppercase">Report</th>
@@ -56,23 +56,23 @@
                             <tbody>
                                 @foreach($recentFeedback as $entry)
                                     <tr class="border-b hover:bg-gray-50">
-                                        <td class="py-2">
+                                        <td data-label="Report" class="py-2">
                                             @if($entry->report)
                                                 <a href="{{ route('reports.show', $entry->report) }}" class="text-indigo-600 hover:text-indigo-800 font-medium">{{ $entry->report->report_number }}</a>
                                             @else
                                                 <span class="text-gray-400">Deleted</span>
                                             @endif
                                         </td>
-                                        <td class="py-2 text-gray-700 max-w-md">{{ Str::limit($entry->feedback, 120) }}</td>
-                                        <td class="py-2 text-gray-500 whitespace-nowrap">{{ $entry->user->name ?? 'Unknown' }}</td>
-                                        <td class="py-2">
+                                        <td data-label="Feedback" class="py-2 text-gray-700 max-w-md">{{ Str::limit($entry->feedback, 120) }}</td>
+                                        <td data-label="By" class="py-2 text-gray-500 whitespace-nowrap">{{ $entry->user->name ?? 'Unknown' }}</td>
+                                        <td data-label="Status" class="py-2">
                                             @if($entry->processed)
                                                 <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Processed</span>
                                             @else
                                                 <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Pending</span>
                                             @endif
                                         </td>
-                                        <td class="py-2 text-gray-500 whitespace-nowrap text-xs">{{ $entry->created_at->format('M d, Y H:i') }}</td>
+                                        <td data-label="Date" class="py-2 text-gray-500 whitespace-nowrap text-xs">{{ $entry->created_at->format('M d, Y H:i') }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>

@@ -78,7 +78,7 @@
                     <div class="card p-6">
                         <h3 class="text-lg font-semibold text-white mb-4">Line Items</h3>
                         <div class="overflow-x-auto">
-                        <table class="min-w-full">
+                        <table class="table-cards min-w-full">
                             <thead>
                                 <tr class="border-b" style="border-color: var(--border);">
                                     <th class="py-2 text-left text-xs font-semibold text-muted uppercase">Description</th>
@@ -90,10 +90,10 @@
                             <tbody>
                                 @foreach($invoice->lineItems as $item)
                                     <tr class="border-b" style="border-color: var(--border);">
-                                        <td class="py-3 text-sm text-slate-200">{{ $item->description }}</td>
-                                        <td class="py-3 text-sm text-right text-muted">{{ number_format($item->quantity, 2) }}</td>
-                                        <td class="py-3 text-sm text-right text-muted">${{ number_format($item->unit_price, 2) }}</td>
-                                        <td class="py-3 text-sm text-right font-medium text-slate-100">${{ number_format($item->total, 2) }}</td>
+                                        <td data-label="Description" class="py-3 text-sm text-slate-200">{{ $item->description }}</td>
+                                        <td data-label="Qty" class="py-3 text-sm text-right text-muted">{{ number_format($item->quantity, 2) }}</td>
+                                        <td data-label="Unit Price" class="py-3 text-sm text-right text-muted">${{ number_format($item->unit_price, 2) }}</td>
+                                        <td data-label="Total" class="py-3 text-sm text-right font-medium text-slate-100">${{ number_format($item->total, 2) }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>

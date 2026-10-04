@@ -48,7 +48,7 @@
             <div class="card">
                 <div class="p-6">
                     <div class="overflow-x-auto">
-                    <table class="min-w-full">
+                    <table class="table-cards min-w-full">
                         <thead>
                             <tr class="border-b" style="border-color: var(--border);">
                                 <th class="px-3 py-3 text-left text-xs font-semibold text-muted uppercase">Product</th>

@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex items-center justify-between">
+        <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
                 <h2 class="font-bold text-2xl text-white leading-tight">Dashboard</h2>
                 <p class="text-sm text-muted mt-0.5">{{ now()->format('l, F j, Y') }}</p>
@@ -19,7 +19,7 @@
             @endif
 
             {{-- Stat cards --}}
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
                 @php
                     $stats = [
                         ['label' => 'Total Revenue', 'value' => '$'.number_format($metrics['total_revenue'], 2), 'color' => 'var(--good)', 'soft' => 'var(--good-soft)', 'sub' => 'Collected to date', 'icon' => '<path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>'],
@@ -29,14 +29,14 @@
                     ];
                 @endphp
                 @foreach($stats as $s)
-                    <div class="card card-hover p-5">
-                        <div class="flex items-start justify-between">
+                    <div class="card card-hover p-4 sm:p-5 min-w-0">
+                        <div class="flex items-start justify-between gap-2">
                             <span class="text-xs font-semibold uppercase tracking-wide text-muted">{{ $s['label'] }}</span>
-                            <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg" style="background: {{ $s['soft'] }}; color: {{ $s['color'] }};">
+                            <span class="hidden sm:inline-flex items-center justify-center w-9 h-9 rounded-lg shrink-0" style="background: {{ $s['soft'] }}; color: {{ $s['color'] }};">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{!! $s['icon'] !!}</svg>
                             </span>
                         </div>
-                        <div class="mt-3 text-2xl font-bold" style="color: {{ $s['color'] }};">{{ $s['value'] }}</div>
+                        <div class="mt-2 sm:mt-3 text-lg sm:text-2xl font-bold tabular-nums whitespace-nowrap" style="color: {{ $s['color'] }};">{{ $s['value'] }}</div>
                         <div class="mt-1 text-xs text-faint">{{ $s['sub'] }}</div>
                     </div>
                 @endforeach

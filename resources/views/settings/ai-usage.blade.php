@@ -45,7 +45,7 @@
                 ] as [$label, $data, $hint])
                     <div class="card p-4">
                         <div class="text-xs font-semibold uppercase tracking-wider text-muted">{{ $label }}</div>
-                        <div class="mt-1 text-2xl font-bold" style="color: {{ $label === 'Projected this month' && $status['monthly']['limit'] && $status['projected'] > $status['monthly']['limit'] ? 'var(--warn)' : 'var(--text)' }};">{{ $money($data['cost']) }}</div>
+                        <div class="mt-1 text-lg sm:text-2xl font-bold tabular-nums whitespace-nowrap" style="color: {{ $label === 'Projected this month' && $status['monthly']['limit'] && $status['projected'] > $status['monthly']['limit'] ? 'var(--warn)' : 'var(--text)' }};">{{ $money($data['cost']) }}</div>
                         <div class="mt-1 text-xs text-faint">
                             @if($data['requests'] !== null)
                                 {{ $data['requests'] }} request{{ $data['requests'] == 1 ? '' : 's' }} · {{ $tokens($data['tokens'] ?? 0) }} tokens
@@ -227,7 +227,7 @@
                     <p class="text-sm text-muted">Nothing recorded yet. Usage appears here as soon as a voice command, report summary or scope generation runs.</p>
                 @else
                     <div class="overflow-x-auto">
-                    <table class="min-w-full">
+                    <table class="table-cards min-w-full">
                         <thead>
                             <tr class="border-b" style="border-color: var(--border);">
                                 <th class="px-3 py-2 text-left text-xs font-semibold text-muted uppercase">When</th>
@@ -244,15 +244,15 @@
                         <tbody class="divide-hair">
                             @foreach($recent as $log)
                                 <tr class="row-item text-sm">
-                                    <td class="px-3 py-2 text-muted whitespace-nowrap">{{ $log->created_at->format('M j, H:i') }}</td>
-                                    <td class="px-3 py-2 text-slate-200">{{ \App\Services\AiUsageService::featureLabel($log->feature) }}</td>
-                                    <td class="px-3 py-2 text-muted">{{ $log->user?->name ?? 'System' }}</td>
-                                    <td class="px-3 py-2 text-faint">{{ $log->model }}</td>
-                                    <td class="px-3 py-2 text-right text-muted">{{ number_format($log->input_tokens + $log->cache_write_tokens) }}</td>
-                                    <td class="px-3 py-2 text-right text-muted">{{ number_format($log->cache_read_tokens) }}</td>
-                                    <td class="px-3 py-2 text-right text-muted">{{ number_format($log->output_tokens) }}</td>
-                                    <td class="px-3 py-2 text-right text-slate-100 font-medium">{{ $money($log->estimated_cost, 4) }}</td>
-                                    <td class="px-3 py-2 text-right text-faint">{{ $log->duration_ms !== null ? number_format($log->duration_ms / 1000, 1) . 's' : '—' }}</td>
+                                    <td data-label="When" class="px-3 py-2 text-muted whitespace-nowrap">{{ $log->created_at->format('M j, H:i') }}</td>
+                                    <td data-label="Feature" class="px-3 py-2 text-slate-200">{{ \App\Services\AiUsageService::featureLabel($log->feature) }}</td>
+                                    <td data-label="User" class="px-3 py-2 text-muted">{{ $log->user?->name ?? 'System' }}</td>
+                                    <td data-label="Model" class="px-3 py-2 text-faint">{{ $log->model }}</td>
+                                    <td data-label="In" class="px-3 py-2 text-right text-muted">{{ number_format($log->input_tokens + $log->cache_write_tokens) }}</td>
+                                    <td data-label="Cached" class="px-3 py-2 text-right text-muted">{{ number_format($log->cache_read_tokens) }}</td>
+                                    <td data-label="Out" class="px-3 py-2 text-right text-muted">{{ number_format($log->output_tokens) }}</td>
+                                    <td data-label="Cost" class="px-3 py-2 text-right text-slate-100 font-medium">{{ $money($log->estimated_cost, 4) }}</td>
+                                    <td data-label="Time" class="px-3 py-2 text-right text-faint">{{ $log->duration_ms !== null ? number_format($log->duration_ms / 1000, 1) . 's' : '—' }}</td>
                                 </tr>
                             @endforeach
                         </tbody>

@@ -161,10 +161,14 @@
         </div>
     </div>
 
+    @php
+        // Built here: Blade can't parse the array literal inside an inline @json(...) argument.
+        $editorItems = $scope->items->map(fn ($i) => $i->only(['id', 'title', 'description', 'category', 'price', 'is_mandatory', 'is_optional', 'is_recommended', 'business_value_statement', 'effort_description', 'deliverable_description']))->values();
+    @endphp
     <script>
         function scopeEditor() {
             return {
-                items: @json($scope->items->map(fn($i) => $i->only(['id','title','description','category','price','is_mandatory','is_optional','is_recommended','business_value_statement','effort_description','deliverable_description']))),
+                items: @json($editorItems),
                 itemsDirty: false,
                 itemsSaving: false,
                 itemsMessage: '',

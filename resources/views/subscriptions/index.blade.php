@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <x-breadcrumbs :items="[['label' => 'Subscriptions']]" />
-        <div class="flex justify-between items-center">
+        <div class="flex flex-wrap justify-between items-center gap-3">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">Subscriptions</h2>
             <a href="{{ route('subscriptions.create') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 transition">Add Subscription</a>
         </div>
@@ -17,7 +17,7 @@
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                     <p class="text-sm text-gray-500">Est. Monthly Cost</p>
-                    <p class="text-2xl font-bold text-indigo-600">${{ number_format($summary['total_monthly'], 2) }}</p>
+                    <p class="text-lg sm:text-2xl font-bold text-indigo-600 tabular-nums whitespace-nowrap">${{ number_format($summary['total_monthly'], 2) }}</p>
                 </div>
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                     <p class="text-sm text-gray-500">Active</p>

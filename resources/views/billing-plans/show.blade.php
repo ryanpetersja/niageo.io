@@ -95,7 +95,7 @@
                     <div class="card p-6">
                         <h3 class="text-lg font-semibold text-white mb-4">Package</h3>
                         <div class="overflow-x-auto">
-                        <table class="min-w-full">
+                        <table class="table-cards min-w-full">
                             <thead>
                                 <tr class="border-b" style="border-color: var(--border);">
                                     <th class="py-2 text-left text-xs font-semibold text-muted uppercase">Description</th>
@@ -108,11 +108,11 @@
                             <tbody>
                                 @foreach($billingPlan->items as $item)
                                     <tr class="border-b" style="border-color: var(--border);">
-                                        <td class="py-3 text-sm text-slate-200">{{ $item->description }}</td>
-                                        <td class="py-3 text-sm text-faint">{{ $item->product?->name ?? '—' }}</td>
-                                        <td class="py-3 text-sm text-right text-muted">{{ number_format($item->quantity, 2) }}</td>
-                                        <td class="py-3 text-sm text-right text-muted">${{ number_format($item->unit_price, 2) }}</td>
-                                        <td class="py-3 text-sm text-right font-medium text-slate-100">${{ number_format($item->total, 2) }}</td>
+                                        <td data-label="Description" class="py-3 text-sm text-slate-200">{{ $item->description }}</td>
+                                        <td data-label="Product" class="py-3 text-sm text-faint">{{ $item->product?->name ?? '—' }}</td>
+                                        <td data-label="Qty" class="py-3 text-sm text-right text-muted">{{ number_format($item->quantity, 2) }}</td>
+                                        <td data-label="Unit Price" class="py-3 text-sm text-right text-muted">${{ number_format($item->unit_price, 2) }}</td>
+                                        <td data-label="Total" class="py-3 text-sm text-right font-medium text-slate-100">${{ number_format($item->total, 2) }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -140,7 +140,7 @@
                             <p class="text-sm text-muted">No invoices generated yet.</p>
                         @else
                             <div class="overflow-x-auto">
-                            <table class="min-w-full">
+                            <table class="table-cards min-w-full">
                                 <thead>
                                     <tr class="border-b" style="border-color: var(--border);">
                                         <th class="py-2 text-left text-xs font-semibold text-muted uppercase">Period</th>
@@ -155,13 +155,13 @@
                                 <tbody>
                                     @foreach($billingPlan->invoices as $invoice)
                                         <tr class="border-b" style="border-color: var(--border);" data-voice-invoice="{{ $invoice->invoice_number }}" data-voice-url="{{ route('invoices.show', $invoice) }}">
-                                            <td class="py-3 text-sm text-slate-200">{{ $invoiceLabels[$invoice->id] ?? '—' }}</td>
-                                            <td class="py-3 text-sm"><a href="{{ route('invoices.show', $invoice) }}" class="accent-ink hover:underline font-medium">{{ $invoice->invoice_number }}</a></td>
-                                            <td class="py-3 text-sm text-muted">{{ $invoice->issue_date->format('M d, Y') }}</td>
-                                            <td class="py-3 text-sm text-muted">{{ $invoice->due_date->format('M d, Y') }}</td>
-                                            <td class="py-3"><span class="badge {{ $invoiceBadge[$invoice->status] ?? 'badge-gray' }}">{{ ucfirst($invoice->status) }}</span></td>
-                                            <td class="py-3 text-sm text-right text-slate-200">${{ number_format($invoice->total, 2) }}</td>
-                                            <td class="py-3 text-sm text-right font-medium" style="color: {{ $invoice->balance_due > 0 ? 'var(--danger)' : 'var(--good)' }};">${{ number_format($invoice->balance_due, 2) }}</td>
+                                            <td data-label="Period" class="py-3 text-sm text-slate-200">{{ $invoiceLabels[$invoice->id] ?? '—' }}</td>
+                                            <td data-label="Invoice" class="py-3 text-sm"><a href="{{ route('invoices.show', $invoice) }}" class="accent-ink hover:underline font-medium">{{ $invoice->invoice_number }}</a></td>
+                                            <td data-label="Issued" class="py-3 text-sm text-muted">{{ $invoice->issue_date->format('M d, Y') }}</td>
+                                            <td data-label="Due" class="py-3 text-sm text-muted">{{ $invoice->due_date->format('M d, Y') }}</td>
+                                            <td data-label="Status" class="py-3"><span class="badge {{ $invoiceBadge[$invoice->status] ?? 'badge-gray' }}">{{ ucfirst($invoice->status) }}</span></td>
+                                            <td data-label="Total" class="py-3 text-sm text-right text-slate-200">${{ number_format($invoice->total, 2) }}</td>
+                                            <td data-label="Balance" class="py-3 text-sm text-right font-medium" style="color: {{ $invoice->balance_due > 0 ? 'var(--danger)' : 'var(--good)' }};">${{ number_format($invoice->balance_due, 2) }}</td>
                                         </tr>
                                     @endforeach
                                 </tbody>

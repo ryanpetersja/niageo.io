@@ -1,9 +1,9 @@
 <x-app-layout>
     <x-slot name="header">
         <x-breadcrumbs :items="[['label' => 'Reports', 'url' => route('reports.index')], ['label' => $report->report_number]]" />
-        <div class="flex justify-between items-center">
+        <div class="flex flex-wrap justify-between items-center gap-3">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">Report {{ $report->report_number }}</h2>
-            <div class="flex gap-2">
+            <div class="flex flex-wrap gap-2">
                 @if(in_array($report->status, ['generated', 'sent', 'archived']))
                     <a href="{{ route('reports.pdf', $report) }}" target="_blank" class="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-md text-xs font-semibold uppercase hover:bg-gray-700 transition">Preview PDF</a>
                     <a href="{{ route('reports.pdf.download', $report) }}" class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md text-xs font-semibold uppercase hover:bg-green-700 transition">Download PDF</a>
@@ -1170,7 +1170,7 @@
                                 <button @click="showCommits = !showCommits" class="text-sm text-indigo-600 hover:text-indigo-800" x-text="showCommits ? 'Hide' : 'Show'"></button>
                             </div>
                             <div x-show="showCommits" x-cloak class="mt-4 overflow-x-auto">
-                                <table class="min-w-full text-sm">
+                                <table class="table-cards min-w-full text-sm">
                                     <thead>
                                         <tr class="border-b">
                                             <th class="py-2 text-left text-xs font-medium text-gray-500 uppercase">SHA</th>
@@ -1183,11 +1183,11 @@
                                     <tbody>
                                         @foreach($report->raw_commits as $commit)
                                             <tr class="border-b hover:bg-gray-50">
-                                                <td class="py-2 font-mono text-xs text-gray-600">{{ $commit['sha'] }}</td>
-                                                <td class="py-2 text-xs text-gray-500">{{ $commit['repo'] }}</td>
-                                                <td class="py-2 text-sm">{{ Str::limit(strtok($commit['message'], "\n"), 80) }}</td>
-                                                <td class="py-2 text-xs text-gray-500">{{ $commit['author_name'] }}</td>
-                                                <td class="py-2 text-xs text-gray-500">{{ \Carbon\Carbon::parse($commit['date'])->format('M d, H:i') }}</td>
+                                                <td data-label="SHA" class="py-2 font-mono text-xs text-gray-600">{{ $commit['sha'] }}</td>
+                                                <td data-label="Repo" class="py-2 text-xs text-gray-500">{{ $commit['repo'] }}</td>
+                                                <td data-label="Message" class="py-2 text-sm">{{ Str::limit(strtok($commit['message'], "\n"), 80) }}</td>
+                                                <td data-label="Author" class="py-2 text-xs text-gray-500">{{ $commit['author_name'] }}</td>
+                                                <td data-label="Date" class="py-2 text-xs text-gray-500">{{ \Carbon\Carbon::parse($commit['date'])->format('M d, H:i') }}</td>
                                             </tr>
                                         @endforeach
                                     </tbody>
@@ -1204,7 +1204,7 @@
                                 <button @click="showActivity = !showActivity" class="text-sm text-indigo-600 hover:text-indigo-800" x-text="showActivity ? 'Hide' : 'Show'"></button>
                             </div>
                             <div x-show="showActivity" x-cloak class="mt-4 overflow-x-auto">
-                                <table class="min-w-full text-sm">
+                                <table class="table-cards min-w-full text-sm">
                                     <thead>
                                         <tr class="border-b">
                                             <th class="py-2 text-left text-xs font-medium text-gray-500 uppercase">Timestamp</th>
@@ -1215,9 +1215,9 @@
                                     <tbody>
                                         @foreach($report->raw_server_activity as $activity)
                                             <tr class="border-b hover:bg-gray-50">
-                                                <td class="py-2 text-xs text-gray-500 whitespace-nowrap">{{ $activity['timestamp'] ?? '—' }}</td>
-                                                <td class="py-2 text-xs text-gray-500">{{ $activity['server_label'] ?? '—' }}</td>
-                                                <td class="py-2 text-sm font-mono text-gray-700">{{ Str::limit($activity['command'], 120) }}</td>
+                                                <td data-label="Timestamp" class="py-2 text-xs text-gray-500 whitespace-nowrap">{{ $activity['timestamp'] ?? '—' }}</td>
+                                                <td data-label="Server" class="py-2 text-xs text-gray-500">{{ $activity['server_label'] ?? '—' }}</td>
+                                                <td data-label="Command" class="py-2 text-sm font-mono text-gray-700">{{ Str::limit($activity['command'], 120) }}</td>
                                             </tr>
                                         @endforeach
                                     </tbody>

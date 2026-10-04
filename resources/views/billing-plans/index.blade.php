@@ -41,7 +41,7 @@
                 @foreach($cards as $c)
                     <div class="card p-4">
                         <div class="text-xs font-semibold uppercase tracking-wider text-muted">{{ $c[0] }}</div>
-                        <div class="mt-1 text-2xl font-bold" style="color: {{ $c[3] }};">{{ $c[1] }}</div>
+                        <div class="mt-1 text-lg sm:text-2xl font-bold tabular-nums whitespace-nowrap" style="color: {{ $c[3] }};">{{ $c[1] }}</div>
                         <div class="mt-1 text-xs text-faint">{{ $c[2] }}</div>
                     </div>
                 @endforeach
@@ -69,7 +69,7 @@
                     </form>
 
                     <div class="overflow-x-auto">
-                    <table class="min-w-full">
+                    <table class="table-cards min-w-full">
                         <thead>
                             <tr class="border-b" style="border-color: var(--border);">
                                 <th class="px-4 py-3 text-left text-xs font-semibold text-muted uppercase">Plan</th>
@@ -85,17 +85,17 @@
                             @php $statusBadge = ['active' => 'badge-good', 'paused' => 'badge-warn', 'ended' => 'badge-gray']; @endphp
                             @forelse($billingPlans as $plan)
                                 <tr class="row-item" data-voice-plan="{{ $plan->name }}" data-voice-url="{{ route('billing-plans.show', $plan) }}">
-                                    <td class="px-4 py-3">
+                                    <td data-label="Plan" class="px-4 py-3">
                                         <a href="{{ route('billing-plans.show', $plan) }}" class="accent-ink hover:underline font-medium">{{ $plan->name }}</a>
                                         <div class="text-xs text-faint">{{ $plan->items->count() }} item{{ $plan->items->count() == 1 ? '' : 's' }}</div>
                                     </td>
-                                    <td class="px-4 py-3 text-sm text-muted">{{ $plan->client->company_name }}</td>
-                                    <td class="px-4 py-3 text-sm text-muted">{{ $plan->cycle_label }}</td>
-                                    <td class="px-4 py-3 text-sm text-right text-slate-200">${{ number_format($plan->period_total, 2) }}</td>
-                                    <td class="px-4 py-3 text-sm text-muted">
+                                    <td data-label="Client" class="px-4 py-3 text-sm text-muted">{{ $plan->client->company_name }}</td>
+                                    <td data-label="Cycle" class="px-4 py-3 text-sm text-muted">{{ $plan->cycle_label }}</td>
+                                    <td data-label="Per period" class="px-4 py-3 text-sm text-right text-slate-200">${{ number_format($plan->period_total, 2) }}</td>
+                                    <td data-label="Next period" class="px-4 py-3 text-sm text-muted">
                                         {{ $plan->next_period_start ? $plan->next_period_start->format('M d, Y') : '—' }}
                                     </td>
-                                    <td class="px-4 py-3 text-sm text-muted">
+                                    <td data-label="Next invoice" class="px-4 py-3 text-sm text-muted">
                                         @if($plan->next_period_start && $plan->status === 'active')
                                             {{ $plan->next_period_start->copy()->subDays($plan->issue_days_before)->format('M d, Y') }}
                                             @if($dueMap[$plan->id] ?? false)
@@ -105,7 +105,7 @@
                                             —
                                         @endif
                                     </td>
-                                    <td class="px-4 py-3"><span class="badge {{ $statusBadge[$plan->status] ?? 'badge-gray' }}">{{ ucfirst($plan->status) }}</span></td>
+                                    <td data-label="Status" class="px-4 py-3"><span class="badge {{ $statusBadge[$plan->status] ?? 'badge-gray' }}">{{ ucfirst($plan->status) }}</span></td>
                                 </tr>
                             @empty
                                 <tr><td colspan="7" class="px-4 py-8 text-center text-muted">No billing plans yet. Create one to start generating invoices automatically.</td></tr>

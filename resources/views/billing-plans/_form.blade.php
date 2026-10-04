@@ -121,25 +121,28 @@
                 <div class="md:col-span-2 text-right">Total</div>
             </div>
             <template x-for="(item, index) in items" :key="index">
-                <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center" data-voice-line>
-                    <div class="md:col-span-3">
-                        <select x-model="item.product_id" :name="'items['+index+'][product_id]'" class="field text-sm" @change="productChanged(index)">
+                <div class="grid grid-cols-2 md:grid-cols-12 gap-3 items-center rounded-lg border p-3 md:p-0 md:border-0 md:rounded-none" style="border-color: var(--border);" data-voice-line>
+                    <div class="col-span-2 md:col-span-3">
+                        <select x-model="item.product_id" :name="'items['+index+'][product_id]'" class="field text-base md:text-sm" @change="productChanged(index)">
                             <option value="">Custom item</option>
                             <template x-for="product in products" :key="product.id">
                                 <option :value="product.id" x-text="product.name"></option>
                             </template>
                         </select>
                     </div>
-                    <div class="md:col-span-4">
-                        <input type="text" x-model="item.description" :name="'items['+index+'][description]'" placeholder="Description" class="field text-sm" required>
+                    <div class="col-span-2 md:col-span-4">
+                        <input type="text" x-model="item.description" :name="'items['+index+'][description]'" placeholder="Description" class="field text-base md:text-sm" required>
                     </div>
                     <div class="md:col-span-1">
-                        <input type="number" x-model="item.quantity" :name="'items['+index+'][quantity]'" step="0.01" min="0.01" class="field text-sm text-right" required>
+                        <label class="block text-xs text-muted mb-1 md:hidden">Qty</label>
+                        <input type="number" inputmode="decimal" x-model="item.quantity" :name="'items['+index+'][quantity]'" step="0.01" min="0.01" class="field text-base md:text-sm text-right" required>
                     </div>
                     <div class="md:col-span-2">
-                        <input type="number" x-model="item.unit_price" :name="'items['+index+'][unit_price]'" step="0.01" min="0" class="field text-sm text-right" required>
+                        <label class="block text-xs text-muted mb-1 md:hidden">Unit price</label>
+                        <input type="number" inputmode="decimal" x-model="item.unit_price" :name="'items['+index+'][unit_price]'" step="0.01" min="0" class="field text-base md:text-sm text-right" required>
                     </div>
-                    <div class="md:col-span-2 flex items-center justify-end gap-3">
+                    <div class="col-span-2 md:col-span-2 flex items-center justify-end gap-3">
+                        <span class="text-sm text-muted mr-auto md:hidden">Amount</span>
                         <span class="text-sm font-medium text-slate-200" x-text="'$' + lineTotal(item).toFixed(2)"></span>
                         <button type="button" @click="removeItem(index)" class="text-slate-500 hover:text-rose-400 text-lg leading-none" x-show="items.length > 1" title="Remove line">&times;</button>
                     </div>
@@ -150,7 +153,7 @@
 
         <div class="border-t pt-4 mb-6" style="border-color: var(--border);">
             <div class="flex justify-end">
-                <div class="w-72 space-y-1 text-sm">
+                <div class="w-full sm:w-72 space-y-1 text-sm">
                     <div class="flex justify-between"><span class="text-muted">Subtotal per period:</span><span class="text-slate-200" x-text="'$' + subtotal.toFixed(2)"></span></div>
                     <div class="flex justify-between"><span class="text-muted">Tax:</span><span class="text-slate-200" x-text="'$' + taxAmount.toFixed(2)"></span></div>
                     <div class="flex justify-between font-bold text-base border-t pt-1 text-white" style="border-color: var(--border);"><span>Total per period:</span><span x-text="'$' + total.toFixed(2)"></span></div>

@@ -1,7 +1,7 @@
 <x-app-layout voice-page="invoices.index">
     <x-slot name="header">
         <x-breadcrumbs :items="[['label' => 'Invoices']]" />
-        <div class="flex justify-between items-center">
+        <div class="flex flex-wrap justify-between items-center gap-3">
             <h2 class="font-semibold text-xl text-white leading-tight">Invoices</h2>
             <a href="{{ route('invoices.create') }}" class="btn btn-primary">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
@@ -32,7 +32,7 @@
                 @foreach($cards as $c)
                     <div class="card p-4">
                         <div class="text-xs font-semibold uppercase tracking-wider text-muted">{{ $c[0] }}</div>
-                        <div class="mt-1 text-2xl font-bold" style="color: {{ $c[3] }};">{{ $c[1] }}</div>
+                        <div class="mt-1 text-lg sm:text-2xl font-bold tabular-nums whitespace-nowrap" style="color: {{ $c[3] }};">{{ $c[1] }}</div>
                         <div class="mt-1 text-xs text-faint">{{ $c[2] }}</div>
                     </div>
                 @endforeach
@@ -83,7 +83,7 @@
                     @endif
 
                     <div class="overflow-x-auto">
-                    <table class="min-w-full">
+                    <table class="table-cards min-w-full">
                         <thead>
                             <tr class="border-b" style="border-color: var(--border);">
                                 <th class="px-4 py-3 text-left text-xs font-semibold text-muted uppercase">Invoice #</th>
@@ -99,7 +99,7 @@
                             @php $map = ['paid' => 'badge-good', 'sent' => 'badge-info', 'draft' => 'badge-gray', 'overdue' => 'badge-danger', 'cancelled' => 'badge-warn']; @endphp
                             @forelse($invoices as $inv)
                                 <tr class="row-item" data-voice-invoice="{{ $inv->invoice_number }}" data-voice-url="{{ route('invoices.show', $inv) }}">
-                                    <td class="px-4 py-3">
+                                    <td data-label="Invoice #" class="px-4 py-3 whitespace-nowrap">
                                         <a href="{{ route('invoices.show', $inv) }}" class="accent-ink hover:underline font-medium">{{ $inv->invoice_number }}</a>
                                         @if($inv->billing_plan_id)
                                             <span class="badge badge-accent ml-1" style="font-size:.6rem;" title="Generated from a billing plan">Recurring</span>
@@ -108,14 +108,14 @@
                                             <div class="text-xs text-faint">{{ $inv->title }}</div>
                                         @endif
                                     </td>
-                                    <td class="px-4 py-3 text-sm text-muted">{{ $inv->client->company_name }}</td>
-                                    <td class="px-4 py-3 text-sm text-muted">{{ $inv->issue_date->format('M d, Y') }}</td>
-                                    <td class="px-4 py-3 text-sm text-muted">{{ $inv->due_date->format('M d, Y') }}</td>
-                                    <td class="px-4 py-3">
+                                    <td data-label="Client" class="px-4 py-3 text-sm text-muted">{{ $inv->client->company_name }}</td>
+                                    <td data-label="Date" class="px-4 py-3 whitespace-nowrap text-sm text-muted">{{ $inv->issue_date->format('M d, Y') }}</td>
+                                    <td data-label="Due" class="px-4 py-3 whitespace-nowrap text-sm text-muted">{{ $inv->due_date->format('M d, Y') }}</td>
+                                    <td data-label="Status" class="px-4 py-3">
                                         <span class="badge {{ $map[$inv->status] ?? 'badge-gray' }}">{{ ucfirst($inv->status) }}</span>
                                     </td>
-                                    <td class="px-4 py-3 text-sm text-right text-slate-200">${{ number_format($inv->total, 2) }}</td>
-                                    <td class="px-4 py-3 text-sm text-right font-medium" style="color: {{ $inv->balance_due > 0 ? 'var(--danger)' : 'var(--good)' }};">${{ number_format($inv->balance_due, 2) }}</td>
+                                    <td data-label="Total" class="px-4 py-3 text-sm text-right text-slate-200">${{ number_format($inv->total, 2) }}</td>
+                                    <td data-label="Balance" class="px-4 py-3 text-sm text-right font-medium" style="color: {{ $inv->balance_due > 0 ? 'var(--danger)' : 'var(--good)' }};">${{ number_format($inv->balance_due, 2) }}</td>
                                 </tr>
                             @empty
                                 <tr><td colspan="7" class="px-4 py-8 text-center text-muted">No invoices found.</td></tr>
@@ -125,8 +125,8 @@
                             <tfoot>
                                 <tr class="font-semibold border-t" style="border-color: var(--border-strong);">
                                     <td colspan="5" class="px-4 py-3 text-sm text-muted uppercase tracking-wider">Page Totals</td>
-                                    <td class="px-4 py-3 text-sm text-right text-white">${{ number_format($invoices->sum('total'), 2) }}</td>
-                                    <td class="px-4 py-3 text-sm text-right text-white">${{ number_format($invoices->sum('balance_due'), 2) }}</td>
+                                    <td data-label="Total" class="px-4 py-3 text-sm text-right text-white">${{ number_format($invoices->sum('total'), 2) }}</td>
+                                    <td data-label="Balance" class="px-4 py-3 text-sm text-right text-white">${{ number_format($invoices->sum('balance_due'), 2) }}</td>
                                 </tr>
                             </tfoot>
                         @endif

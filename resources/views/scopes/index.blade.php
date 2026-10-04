@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <x-breadcrumbs :items="[['label' => 'Scopes']]" />
-        <div class="flex justify-between items-center">
+        <div class="flex flex-wrap justify-between items-center gap-3">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">Scopes</h2>
             <a href="{{ route('scopes.create') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 transition">New Scope</a>
         </div>
@@ -32,7 +32,7 @@
                         <button type="submit" class="px-4 py-2 bg-gray-600 text-white rounded-md text-sm hover:bg-gray-700">Filter</button>
                     </form>
 
-                    <table class="min-w-full divide-y divide-gray-200">
+                    <table class="table-cards min-w-full divide-y divide-gray-200">
                         <thead>
                             <tr>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Scope #</th>
@@ -48,10 +48,10 @@
                         <tbody class="divide-y divide-gray-200">
                             @forelse($scopes as $scope)
                                 <tr class="hover:bg-gray-50">
-                                    <td class="px-4 py-3"><a href="{{ route('scopes.show', $scope) }}" class="text-indigo-600 hover:text-indigo-800 font-medium">{{ $scope->scope_number }}</a></td>
-                                    <td class="px-4 py-3 text-sm text-gray-600">{{ $scope->client->company_name }}</td>
-                                    <td class="px-4 py-3 text-sm text-gray-600">{{ Str::limit($scope->title, 40) }}</td>
-                                    <td class="px-4 py-3">
+                                    <td data-label="Scope #" class="px-4 py-3"><a href="{{ route('scopes.show', $scope) }}" class="text-indigo-600 hover:text-indigo-800 font-medium">{{ $scope->scope_number }}</a></td>
+                                    <td data-label="Client" class="px-4 py-3 text-sm text-gray-600">{{ $scope->client->company_name }}</td>
+                                    <td data-label="Title" class="px-4 py-3 text-sm text-gray-600">{{ Str::limit($scope->title, 40) }}</td>
+                                    <td data-label="Status" class="px-4 py-3">
                                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                                             {{ $scope->status === 'draft' ? 'bg-gray-100 text-gray-800' : '' }}
                                             {{ $scope->status === 'sent' ? 'bg-blue-100 text-blue-800' : '' }}
@@ -59,10 +59,10 @@
                                             {{ $scope->status === 'archived' ? 'bg-yellow-100 text-yellow-800' : '' }}
                                         ">{{ ucfirst($scope->status) }}</span>
                                     </td>
-                                    <td class="px-4 py-3 text-sm text-right text-gray-600">{{ $scope->items_count ?? $scope->items->count() }}</td>
-                                    <td class="px-4 py-3 text-sm text-right text-gray-600">{{ $scope->currency_symbol }}{{ number_format($scope->total_price, 2) }}</td>
-                                    <td class="px-4 py-3 text-sm text-right text-gray-600">{{ $scope->created_at->format('M d, Y') }}</td>
-                                    <td class="px-4 py-3 text-sm text-right">
+                                    <td data-label="Items" class="px-4 py-3 text-sm text-right text-gray-600">{{ $scope->items_count ?? $scope->items->count() }}</td>
+                                    <td data-label="Total" class="px-4 py-3 text-sm text-right text-gray-600">{{ $scope->currency_symbol }}{{ number_format($scope->total_price, 2) }}</td>
+                                    <td data-label="Created" class="px-4 py-3 text-sm text-right text-gray-600">{{ $scope->created_at->format('M d, Y') }}</td>
+                                    <td data-label="Actions" class="px-4 py-3 text-sm text-right">
                                         <a href="{{ route('scopes.show', $scope) }}" class="text-indigo-600 hover:text-indigo-800">View</a>
                                     </td>
                                 </tr>

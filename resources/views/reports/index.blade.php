@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <x-breadcrumbs :items="[['label' => 'Reports']]" />
-        <div class="flex justify-between items-center">
+        <div class="flex flex-wrap justify-between items-center gap-3">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">Reports</h2>
             <a href="{{ route('reports.create') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 transition">New Report</a>
         </div>
@@ -32,7 +32,7 @@
                         <button type="submit" class="px-4 py-2 bg-gray-600 text-white rounded-md text-sm hover:bg-gray-700">Filter</button>
                     </form>
 
-                    <table class="min-w-full divide-y divide-gray-200">
+                    <table class="table-cards min-w-full divide-y divide-gray-200">
                         <thead>
                             <tr>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Report #</th>
@@ -47,11 +47,11 @@
                         <tbody class="divide-y divide-gray-200">
                             @forelse($reports as $report)
                                 <tr class="hover:bg-gray-50">
-                                    <td class="px-4 py-3"><a href="{{ route('reports.show', $report) }}" class="text-indigo-600 hover:text-indigo-800 font-medium">{{ $report->report_number }}</a></td>
-                                    <td class="px-4 py-3 text-sm text-gray-600">{{ $report->client->company_name }}</td>
-                                    <td class="px-4 py-3 text-sm text-gray-600">{{ Str::limit($report->title, 40) }}</td>
-                                    <td class="px-4 py-3 text-sm text-gray-600">{{ $report->date_from->format('M d') }} - {{ $report->date_to->format('M d, Y') }}</td>
-                                    <td class="px-4 py-3">
+                                    <td data-label="Report #" class="px-4 py-3"><a href="{{ route('reports.show', $report) }}" class="text-indigo-600 hover:text-indigo-800 font-medium">{{ $report->report_number }}</a></td>
+                                    <td data-label="Client" class="px-4 py-3 text-sm text-gray-600">{{ $report->client->company_name }}</td>
+                                    <td data-label="Title" class="px-4 py-3 text-sm text-gray-600">{{ Str::limit($report->title, 40) }}</td>
+                                    <td data-label="Period" class="px-4 py-3 text-sm text-gray-600">{{ $report->date_from->format('M d') }} - {{ $report->date_to->format('M d, Y') }}</td>
+                                    <td data-label="Status" class="px-4 py-3">
                                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                                             {{ $report->status === 'draft' ? 'bg-gray-100 text-gray-800' : '' }}
                                             {{ $report->status === 'generated' ? 'bg-blue-100 text-blue-800' : '' }}
@@ -59,8 +59,8 @@
                                             {{ $report->status === 'archived' ? 'bg-yellow-100 text-yellow-800' : '' }}
                                         ">{{ ucfirst($report->status) }}</span>
                                     </td>
-                                    <td class="px-4 py-3 text-sm text-right text-gray-600">{{ $report->commit_count }}</td>
-                                    <td class="px-4 py-3 text-sm text-right">
+                                    <td data-label="Commits" class="px-4 py-3 text-sm text-right text-gray-600">{{ $report->commit_count }}</td>
+                                    <td data-label="Actions" class="px-4 py-3 text-sm text-right">
                                         <a href="{{ route('reports.show', $report) }}" class="text-indigo-600 hover:text-indigo-800">View</a>
                                     </td>
                                 </tr>

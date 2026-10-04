@@ -108,6 +108,43 @@
 
     /* Section divider line for tables/lists */
     .divide-hair > * + * { border-top: 1px solid var(--border); }
+
+    /*
+     * Phones: each table row becomes a card. The first cell is the card's heading; every other
+     * cell is a "label … value" line, labelled from its data-label attribute. Rows made of
+     * colspan cells (totals, empty states, full-width rows) stay on a single line.
+     */
+    @media (max-width: 639px) {
+        .table-cards { display: block; min-width: 0 !important; width: 100%; }
+        .table-cards thead { display: none; }
+        .table-cards tbody, .table-cards tfoot { display: block; }
+        .table-cards tr { display: block; padding: .85rem 0; }
+        .table-cards td {
+            display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+            padding: .2rem 0 !important; text-align: right !important; white-space: normal !important; min-width: 0;
+        }
+        .table-cards td::before {
+            content: attr(data-label); flex-shrink: 0; text-align: left;
+            font-size: .75rem; font-weight: 600; color: var(--text-muted);
+        }
+        .table-cards td:first-child { display: block; text-align: left !important; padding-bottom: .45rem !important; }
+        .table-cards td:first-child::before, .table-cards td:not([data-label])::before, .table-cards td[data-label=""]::before { content: none; }
+        .table-cards td:not([data-label]):not(:first-child) { justify-content: flex-end; }
+        .table-cards td > .field, .table-cards td > input { flex: 1 1 auto; max-width: 65%; }
+        .table-cards tr:has(> td[colspan]) { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+        .table-cards tr:has(> td[colspan]) > td { display: block; padding: 0 !important; }
+        .table-cards tr:has(> td[colspan]) > td:first-child { flex: 1 1 auto; }
+        .table-cards tr:has(> td[colspan]):only-child > td, .table-cards tr > td[colspan]:only-child { text-align: left !important; }
+        /* Footer totals with labelled cells read as a small card, like the rows above. */
+        .table-cards tfoot tr:has(> td[data-label]) { display: block; }
+        .table-cards tfoot tr:has(> td[data-label]) > td:not(:first-child) { display: flex; padding: .2rem 0 !important; }
+        .row-item { border-radius: 0; }
+    }
+
+    /* Phones: leave room below the content for the floating voice assistant button. */
+    @media (max-width: 639px) {
+        main[data-voice-page] { padding-bottom: 5.5rem; }
+    }
 }
 
 /* ============================================================
