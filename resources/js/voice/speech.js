@@ -7,7 +7,46 @@ export function recognitionSupported() {
     return Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
 }
 
-export function createRecognizer({ lang = 'en-US', onInterim, onFinal, onEnd, onError }) {
+const normalise = (text) => text.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, '').replace(/\s+/g, ' ').trim();
+
+/**
+ * Collapse a session's result list into { final, interim } text.
+ *
+ * Desktop Chrome reports one result per phrase. Android Chrome (continuous mode) instead adds a new
+ * result for every partial, each repeating the whole utterance so far and often already marked final
+ * ("you find all", "can you find all", "can you find all the" …). Appending those produced a stutter,
+ * so a result that contains the previous one (or is contained by it) replaces it instead.
+ */
+export function collapseResults(results) {
+    const segments = [];
+    for (let i = 0; i < results.length; i++) {
+        const text = results[i][0]?.transcript?.trim();
+        if (!text) continue;
+        const isFinal = Boolean(results[i].isFinal);
+        const last = segments[segments.length - 1];
+        if (last) {
+            const current = normalise(text);
+            const previous = normalise(last.text);
+            if (current.includes(previous)) {
+                segments[segments.length - 1] = { text, isFinal };
+                continue;
+            }
+            if (previous.includes(current)) {
+                last.isFinal = last.isFinal || isFinal;
+                continue;
+            }
+        }
+        segments.push({ text, isFinal });
+    }
+    const join = (list) => list.map((s) => s.text).join(' ').trim();
+    return { final: join(segments.filter((s) => s.isFinal)), interim: join(segments.filter((s) => !s.isFinal)) };
+}
+
+/**
+ * onResult receives the whole current session's transcript every time ({ final, interim }),
+ * so callers replace rather than append within a session.
+ */
+export function createRecognizer({ lang = 'en-US', onResult, onEnd, onError }) {
     const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!Recognition) return null;
 
@@ -18,17 +57,7 @@ export function createRecognizer({ lang = 'en-US', onInterim, onFinal, onEnd, on
     recognizer.continuous = true;
     recognizer.maxAlternatives = 1;
 
-    recognizer.onresult = (event) => {
-        let interim = '';
-        let finalText = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-            const result = event.results[i];
-            if (result.isFinal) finalText += result[0].transcript;
-            else interim += result[0].transcript;
-        }
-        if (interim) onInterim?.(interim);
-        if (finalText.trim()) onFinal?.(finalText.trim());
-    };
+    recognizer.onresult = (event) => onResult?.(collapseResults(event.results));
     recognizer.onerror = (event) => onError?.(event.error);
     recognizer.onend = () => onEnd?.();
 

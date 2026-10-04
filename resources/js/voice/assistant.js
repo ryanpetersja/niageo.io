@@ -66,7 +66,8 @@ export function voiceAssistant() {
         // patient listening
         pauseMs: DEFAULT_PAUSE_MS,
         pauseTimer: null,
-        pendingText: '', // finalised speech not yet sent
+        pendingText: '', // finalised speech from earlier recognition sessions, not yet sent
+        sessionText: '', // finalised speech in the current recognition session
         liveText: '', // words still being recognised
         countdownKey: 0,
         flushRequested: false,
@@ -90,7 +91,7 @@ export function voiceAssistant() {
         },
 
         get dictation() {
-            return [this.pendingText, this.liveText].filter(Boolean).join(' ').trim();
+            return [this.pendingText, this.sessionText, this.liveText].filter(Boolean).join(' ').trim();
         },
 
         get examples() {
@@ -303,6 +304,7 @@ export function voiceAssistant() {
             clearTimeout(this.idleTimer);
             clearTimeout(this.pauseTimer);
             this.pendingText = '';
+            this.sessionText = '';
             this.liveText = '';
             this.flushRequested = false;
             this.stopRecognizer();
@@ -315,10 +317,10 @@ export function voiceAssistant() {
             if (!this.recognizer) {
                 this.recognizer = createRecognizer({
                     lang: this.lang,
-                    onInterim: (text) => this.handleSpeech({ interim: text }),
-                    onFinal: (text) => this.handleSpeech({ final: text }),
+                    onResult: (result) => this.handleSpeech(result),
                     onEnd: () => {
                         this.recognizerActive = false;
+                        this.commitSession();
                         if (this.flushRequested) {
                             this.flushRequested = false;
                             this.flushTranscript();
@@ -361,6 +363,7 @@ export function voiceAssistant() {
                 try { this.recognizer.abort(); } catch (e) { /* already stopped */ }
             }
             this.recognizerActive = false;
+            this.sessionText = '';
             this.liveText = '';
         },
 
@@ -369,12 +372,16 @@ export function voiceAssistant() {
         handleSpeech({ interim, final }) {
             if (this.status !== 'listening') return;
             this.lastActivity = Date.now();
-            if (final) {
-                this.pendingText = `${this.pendingText} ${final}`.trim();
-                this.liveText = '';
-            }
-            if (interim !== undefined) this.liveText = interim;
+            // Each result carries the whole session so far, so replace instead of appending.
+            this.sessionText = final;
+            this.liveText = interim;
             this.armPauseTimer();
+        },
+
+        /** A recognition session ended: keep its finalised words before the next session starts afresh. */
+        commitSession() {
+            this.pendingText = [this.pendingText, this.sessionText].filter(Boolean).join(' ').trim();
+            this.sessionText = '';
         },
 
         armPauseTimer() {
@@ -385,7 +392,7 @@ export function voiceAssistant() {
 
         onPauseElapsed() {
             if (this.status !== 'listening') return;
-            if (this.pendingText) {
+            if (this.pendingText || this.sessionText) {
                 this.flushTranscript();
                 return;
             }
@@ -403,8 +410,9 @@ export function voiceAssistant() {
 
         flushTranscript() {
             clearTimeout(this.pauseTimer);
-            const text = [this.pendingText, this.liveText].join(' ').trim();
+            const text = [this.pendingText, this.sessionText, this.liveText].filter(Boolean).join(' ').trim();
             this.pendingText = '';
+            this.sessionText = '';
             this.liveText = '';
             this.countdownKey++;
             if (text) this.send(text);
