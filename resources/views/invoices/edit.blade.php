@@ -5,7 +5,7 @@
     </x-slot>
 
     <div class="py-6">
-        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-4xl mx-auto px-3 sm:px-6 lg:px-8">
             @if(session('error'))
                 <div class="mb-4 rounded-lg px-4 py-3 text-sm" style="background: var(--danger-soft); color: var(--danger);">{{ session('error') }}</div>
             @endif
@@ -16,10 +16,10 @@
             <!-- Apply Preset -->
             @if($invoice->client->pricingPresets->count() > 0)
                 <div class="card p-4 mb-6">
-                    <form method="POST" action="{{ route('invoices.apply-preset', $invoice) }}" data-voice-form="preset" class="flex items-center gap-4">
+                    <form method="POST" action="{{ route('invoices.apply-preset', $invoice) }}" data-voice-form="preset" class="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                         @csrf
                         <span class="text-sm font-medium text-muted">Apply Pricing Preset:</span>
-                        <select name="pricing_preset_id" class="field text-sm" style="width:auto;">
+                        <select name="pricing_preset_id" class="field text-base sm:text-sm sm:w-auto">
                             @foreach($invoice->client->pricingPresets as $preset)
                                 <option value="{{ $preset->id }}">{{ $preset->name }} (${{ number_format($preset->total, 2) }})</option>
                             @endforeach
@@ -29,7 +29,7 @@
                 </div>
             @endif
 
-            <div class="card p-6" x-data="invoiceForm()">
+            <div class="card p-4 sm:p-6" x-data="invoiceForm()">
                 <form method="POST" action="{{ route('invoices.update', $invoice) }}" data-voice-form="invoice">
                     @csrf @method('PUT')
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -63,29 +63,42 @@
                     <h3 class="text-base font-semibold text-white mb-4">Line Items</h3>
                     <div class="space-y-3 mb-4">
                         <template x-for="(item, index) in lineItems" :key="index">
-                            <div class="flex gap-3 items-center" data-voice-line>
-                                <div class="flex-1">
-                                    <input type="text" x-model="item.description" :name="'line_items['+index+'][description]'" placeholder="Description" class="field text-sm" required>
+                            {{-- Mobile: a stacked card per line (full-width description, labelled qty/price). sm+: a single row. --}}
+                            <div class="rounded-lg border p-3 sm:p-0 sm:border-0 sm:rounded-none flex flex-col gap-3 sm:flex-row sm:items-center" style="border-color: var(--border);" data-voice-line>
+                                <div class="flex items-center justify-between sm:hidden">
+                                    <span class="text-xs font-semibold uppercase tracking-wide text-muted" x-text="'Item ' + (index + 1)"></span>
+                                    <button type="button" @click="removeItem(index)" class="text-sm text-slate-400 hover:text-rose-400 px-2 py-1 -mr-2" x-show="lineItems.length > 1">Remove</button>
                                 </div>
-                                <div class="w-24">
-                                    <input type="number" x-model="item.quantity" :name="'line_items['+index+'][quantity]'" step="0.01" min="0.01" class="field text-sm" required>
+                                <div class="sm:flex-1 min-w-0">
+                                    <label class="block text-xs text-muted mb-1 sm:sr-only" :for="'line_description_'+index">Description</label>
+                                    <input type="text" :id="'line_description_'+index" x-model="item.description" :name="'line_items['+index+'][description]'" placeholder="Description" class="field text-base sm:text-sm" required>
                                 </div>
-                                <div class="w-32">
-                                    <input type="number" x-model="item.unit_price" :name="'line_items['+index+'][unit_price]'" step="0.01" min="0" class="field text-sm" required>
+                                <div class="grid grid-cols-2 gap-3 sm:contents">
+                                    <div class="sm:w-24 sm:shrink-0">
+                                        <label class="block text-xs text-muted mb-1 sm:sr-only" :for="'line_quantity_'+index">Qty</label>
+                                        <input type="number" inputmode="decimal" :id="'line_quantity_'+index" x-model="item.quantity" :name="'line_items['+index+'][quantity]'" step="0.01" min="0.01" class="field text-base sm:text-sm" required>
+                                    </div>
+                                    <div class="sm:w-32 sm:shrink-0">
+                                        <label class="block text-xs text-muted mb-1 sm:sr-only" :for="'line_price_'+index">Unit Price</label>
+                                        <input type="number" inputmode="decimal" :id="'line_price_'+index" x-model="item.unit_price" :name="'line_items['+index+'][unit_price]'" step="0.01" min="0" class="field text-base sm:text-sm" required>
+                                    </div>
                                 </div>
-                                <div class="w-28 text-right text-sm font-medium text-slate-200" x-text="'$' + (item.quantity * item.unit_price).toFixed(2)"></div>
-                                <button type="button" @click="removeItem(index)" class="text-slate-500 hover:text-rose-400 text-lg leading-none" x-show="lineItems.length > 1">&times;</button>
+                                <div class="flex items-center justify-between sm:justify-end sm:w-32 sm:shrink-0 text-sm font-medium text-slate-200">
+                                    <span class="text-muted sm:hidden">Amount</span>
+                                    <span class="tabular-nums" x-text="'$' + Number(item.quantity * item.unit_price || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })"></span>
+                                </div>
+                                <button type="button" @click="removeItem(index)" class="hidden sm:block text-slate-500 hover:text-rose-400 text-lg leading-none" x-show="lineItems.length > 1" aria-label="Remove line item">&times;</button>
                             </div>
                         </template>
                     </div>
-                    <button type="button" @click="addItem()" class="text-sm accent-ink hover:underline mb-6">+ Add Line Item</button>
+                    <button type="button" @click="addItem()" class="w-full sm:w-auto rounded-lg border border-dashed sm:border-0 py-3 sm:py-0 text-sm accent-ink hover:underline mb-6" style="border-color: var(--border);">+ Add Line Item</button>
 
                     <div class="border-t pt-4 mb-6" style="border-color: var(--border);">
                         <div class="flex justify-end">
-                            <div class="w-64 space-y-1 text-sm">
-                                <div class="flex justify-between"><span class="text-muted">Subtotal:</span><span class="text-slate-200" x-text="'$' + subtotal.toFixed(2)"></span></div>
-                                <div class="flex justify-between"><span class="text-muted">Tax:</span><span class="text-slate-200" x-text="'$' + taxAmount.toFixed(2)"></span></div>
-                                <div class="flex justify-between font-bold text-base border-t pt-1 text-white" style="border-color: var(--border);"><span>Total:</span><span x-text="'$' + total.toFixed(2)"></span></div>
+                            <div class="w-full sm:w-72 space-y-1 text-sm tabular-nums">
+                                <div class="flex justify-between"><span class="text-muted">Subtotal:</span><span class="text-slate-200" x-text="'$' + Number(subtotal || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })"></span></div>
+                                <div class="flex justify-between"><span class="text-muted">Tax:</span><span class="text-slate-200" x-text="'$' + Number(taxAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })"></span></div>
+                                <div class="flex justify-between font-bold text-base border-t pt-1 text-white" style="border-color: var(--border);"><span>Total:</span><span x-text="'$' + Number(total || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })"></span></div>
                             </div>
                         </div>
                     </div>
@@ -101,7 +114,7 @@
                         </div>
                     </div>
 
-                    <div class="flex justify-end gap-3">
+                    <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 [&>*]:justify-center">
                         <a href="{{ route('invoices.show', $invoice) }}" data-voice-action="cancel" class="btn btn-secondary">Cancel</a>
                         <x-primary-button>Update Invoice</x-primary-button>
                     </div>
