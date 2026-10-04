@@ -32,6 +32,8 @@ registerPage('invoices.form', {
         'Reduce every item by 15 percent',
         'Remove the last line item',
         'Set the tax rate to 15 percent',
+        'Add a line for each pull request merged in September',
+        'Bill the commits from last week at 50 dollars each',
         'Save the invoice',
     ],
 
@@ -97,12 +99,16 @@ registerPage('invoices.form', {
             const data = formData();
             if (!data) return { error: "The line item editor isn't ready." };
             const qty = quantity === undefined ? 1 : Number(quantity);
-            data.lineItems.push({
+            const line = {
                 description: String(description || ''),
                 quantity: Number.isFinite(qty) && qty > 0 ? qty : 1,
                 unit_price: Number(unit_price) || 0,
-            });
-            highlightLine(data.lineItems.length);
+            };
+            // A new invoice starts with one empty line: fill it rather than leaving a blank line behind.
+            const blank = data.lineItems.findIndex((item) => !String(item.description || '').trim() && !(Number(item.unit_price) > 0));
+            if (blank !== -1) data.lineItems.splice(blank, 1, line);
+            else data.lineItems.push(line);
+            highlightLine(blank !== -1 ? blank + 1 : data.lineItems.length);
             return {};
         },
 

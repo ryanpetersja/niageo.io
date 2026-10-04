@@ -18,6 +18,9 @@ class VoiceCommandService
 {
     public const MAX_HISTORY = 10;
 
+    /** Claude calls per command when the screen has server-side lookups. */
+    public const MAX_LOOKUP_ROUNDS = 3;
+
     public function __construct(
         private ClaudeService $claude,
         private VoicePageRegistry $registry,
@@ -55,10 +58,37 @@ class VoiceCommandService
             $payload['output_config'] = ['effort' => $effort];
         }
 
-        $body = $this->claude->send($payload, 30, 'voice');
+        // Screens with server-side lookups (e.g. GitHub) may need a few rounds: Claude calls the
+        // lookup, we send back its result, Claude answers. Browser actions from every round are kept.
+        $serverTools = $page instanceof ResolvesServerTools ? $page->serverToolNames() : [];
+        $reply = '';
+        $actions = [];
+        $raw = [];
 
-        [$reply, $actions] = $this->parseResponse($body);
+        for ($round = 1; ; $round++) {
+            $body = $this->claude->send($payload, 30, 'voice');
+            $raw = $this->addUsage($raw, is_array($body['usage'] ?? null) ? $body['usage'] : []);
+
+            [$roundReply, $roundActions] = $this->parseResponse($body);
+            if ($roundReply !== '') {
+                $reply = $roundReply;
+            }
+
+            $lookups = array_values(array_filter($roundActions, fn ($a) => in_array($a['name'], $serverTools, true)));
+            $actions = array_merge($actions, array_values(array_filter($roundActions, fn ($a) => ! in_array($a['name'], $serverTools, true))));
+
+            if ($lookups === [] || $round >= self::MAX_LOOKUP_ROUNDS || ($body['stop_reason'] ?? '') === 'refusal') {
+                break;
+            }
+
+            $payload['messages'][] = ['role' => 'assistant', 'content' => $body['content']];
+            $payload['messages'][] = ['role' => 'user', 'content' => $this->toolResults($body['content'], $page, $serverTools, $tools, $context)];
+        }
+
         $actions = $this->validateActions($actions, $tools);
+        if ($page instanceof ResolvesServerTools) {
+            $actions = $this->expandActions($page, $actions, $context);
+        }
 
         if ($reply === '' && $actions === []) {
             $reply = "Sorry, I couldn't work out how to do that on this screen.";
@@ -74,7 +104,6 @@ class VoiceCommandService
             }
         }
 
-        $raw = is_array($body['usage'] ?? null) ? $body['usage'] : [];
         $usage = [
             'input' => (int) ($raw['input_tokens'] ?? 0),
             'output' => (int) ($raw['output_tokens'] ?? 0),
@@ -91,6 +120,69 @@ class VoiceCommandService
             'usage' => $usage,
             'budget' => $this->budgetSummary(),
         ];
+    }
+
+    /**
+     * The user turn answering every tool_use block of a round: server lookups are run here;
+     * browser actions are acknowledged (they run in the browser once the answer is complete).
+     */
+    protected function toolResults(array $content, PageCapability&ResolvesServerTools $page, array $serverTools, array $tools, array $context): array
+    {
+        $results = [];
+        foreach ($content as $block) {
+            if (! is_array($block) || ($block['type'] ?? '') !== 'tool_use') {
+                continue;
+            }
+            $name = (string) ($block['name'] ?? '');
+            $result = ['type' => 'tool_result', 'tool_use_id' => (string) ($block['id'] ?? '')];
+
+            if (in_array($name, $serverTools, true)) {
+                $valid = $this->validateActions([['name' => $name, 'input' => is_array($block['input'] ?? null) ? $block['input'] : []]], $tools);
+                if ($valid === []) {
+                    $result['content'] = 'Invalid arguments for ' . $name . '; check the required fields and formats.';
+                    $result['is_error'] = true;
+                } else {
+                    try {
+                        $result['content'] = $page->runServerTool($name, $valid[0]['input'], $context);
+                    } catch (\Throwable $e) {
+                        Log::warning('Voice command: lookup failed', ['tool' => $name, 'error' => $e->getMessage()]);
+                        $result['content'] = 'The lookup failed. Tell the user it could not be completed.';
+                        $result['is_error'] = true;
+                    }
+                }
+            } else {
+                $result['content'] = 'Queued: this runs in the browser after you finish answering. Do not call it again.';
+            }
+
+            $results[] = $result;
+        }
+
+        return $results;
+    }
+
+    /** Replace compact actions (e.g. add_github_lines) with the browser actions they stand for. */
+    protected function expandActions(ResolvesServerTools $page, array $actions, array $context): array
+    {
+        $expanded = [];
+        foreach ($actions as $action) {
+            $replacement = $page->expandAction($action, $context);
+            if ($replacement === null) {
+                $expanded[] = $action;
+            } else {
+                array_push($expanded, ...$replacement);
+            }
+        }
+
+        return $expanded;
+    }
+
+    protected function addUsage(array $total, array $usage): array
+    {
+        foreach (['input_tokens', 'output_tokens', 'cache_read_input_tokens', 'cache_creation_input_tokens'] as $key) {
+            $total[$key] = (int) ($total[$key] ?? 0) + (int) ($usage[$key] ?? 0);
+        }
+
+        return $total;
     }
 
     /** Month-to-date spend against the monthly budget, for the widget footer (null when no budget is set). */
@@ -128,6 +220,7 @@ How to respond:
 - Requests often span several screens ("open that invoice, cut every price by 15%, save it, then go back to the list and show only Acme"). Do what this screen supports, call the tool that opens the next screen, and in the same response call continue_task with a precise note of everything still to do. The app reopens you on the new screen with that note and the screen's data; keep going the same way until nothing remains. Never call continue_task when the request is complete.
 - Prefer acting over asking. Act on any reasonable reading of the request; ask a question only when two readings would do materially different things (for example two line items match equally well).
 - Always include ONE short spoken reply as plain text (no markdown, no lists, no quotes around values), written in the past tense as if the actions have already completed, for example: "Filtered to overdue invoices for Acme." or "Added website hosting at 45 dollars." Keep it under 20 words; it is read aloud.
+- Some screens have lookup tools (for example find_github_work) that run immediately on the server and return data to you. Call the lookup first; you then get its result and make the remaining tool calls (for example add_github_lines) in your next response, with the spoken reply.
 - If the user only asks a question about what is on screen (totals, dates, status, what can be done), answer from the CURRENT SCREEN text without calling tools.
 - If the request is ambiguous (for example two line items could match), ask one short question instead of guessing, and call no tools.
 - If the current screen cannot do what was asked but another screen can, use the navigate tool to go there and say what to do next. If nothing in the app can do it, say so briefly.

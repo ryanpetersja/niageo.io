@@ -63,6 +63,7 @@ Route::middleware(['auth'])->group(function () {
     // Client Repositories
     Route::post('/clients/{client}/repositories', [ClientRepositoryController::class, 'store'])->name('repositories.store');
     Route::delete('/clients/{client}/repositories/{repository}', [ClientRepositoryController::class, 'destroy'])->name('repositories.destroy');
+    Route::get('/clients/{client}/github-activity', [ClientRepositoryController::class, 'activity'])->name('clients.github-activity');
     Route::get('/api/github/repos', [ClientRepositoryController::class, 'githubRepos'])->name('api.github.repos');
     Route::get('/api/github/branches', [ClientRepositoryController::class, 'githubBranches'])->name('api.github.branches');
 

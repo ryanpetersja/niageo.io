@@ -55,4 +55,9 @@ final class Tool
     {
         return ['type' => 'array', 'items' => ['type' => 'integer'], 'description' => $description];
     }
+
+    public static function stringList(string $description): array
+    {
+        return ['type' => 'array', 'items' => ['type' => 'string'], 'description' => $description];
+    }
 }

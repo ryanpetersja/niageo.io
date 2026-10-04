@@ -3,15 +3,24 @@
 namespace App\Services\Voice\Pages;
 
 use App\Services\Voice\PageCapability;
+use App\Services\Voice\ResolvesServerTools;
+use App\Services\Voice\Support\GitHubLookup;
 use App\Services\Voice\Support\Screen;
 use App\Services\Voice\Support\Tool;
 
 /**
  * Voice capabilities for the invoice editor (create and edit share one form).
  */
-class InvoiceFormPage implements PageCapability
+class InvoiceFormPage implements PageCapability, ResolvesServerTools
 {
     public const FIELDS = ['client_id', 'title', 'issue_date', 'due_date', 'tax_rate', 'notes', 'internal_notes'];
+
+    protected ?GitHubLookup $github = null;
+
+    protected function github(): GitHubLookup
+    {
+        return $this->github ??= app(GitHubLookup::class);
+    }
 
     public function name(): string
     {
@@ -25,7 +34,22 @@ class InvoiceFormPage implements PageCapability
 
     public function tools(array $context): array
     {
-        return self::formTools('');
+        return array_merge(self::formTools(''), GitHubLookup::tools());
+    }
+
+    public function serverToolNames(): array
+    {
+        return [GitHubLookup::FIND];
+    }
+
+    public function runServerTool(string $name, array $input, array $context): string
+    {
+        return $name === GitHubLookup::FIND ? $this->github()->find($input, $context) : 'Unknown lookup.';
+    }
+
+    public function expandAction(array $action, array $context): ?array
+    {
+        return $action['name'] === GitHubLookup::ADD ? $this->github()->expand($action['input']) : null;
     }
 
     /**
@@ -159,6 +183,8 @@ class InvoiceFormPage implements PageCapability
                 $presets
             ))) . '.';
 
+        $lines[] = $this->github()->screenLine($fields['client_id'] ?? null);
+
         $lines[] = 'Saving requires a client, an issue date, a due date on or after the issue date, and at least one line item with a description and a quantity above zero.';
 
         return implode("\n", $lines);
@@ -180,6 +206,8 @@ class InvoiceFormPage implements PageCapability
             'Reduce every item by 15 percent',
             'Remove the last line item',
             'Set the tax rate to 15 percent',
+            'Add a line for each pull request merged in September',
+            'Bill the commits from last week at 50 dollars each',
             'Save the invoice',
         ];
     }

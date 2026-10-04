@@ -54,6 +54,35 @@ class ClientRepositoryController extends Controller
         ]);
     }
 
+    /**
+     * Merged pull requests or commits across the client's linked repositories for a period,
+     * each with a suggested invoice line description (used by "Import from GitHub" on invoices).
+     */
+    public function activity(Request $request, Client $client)
+    {
+        $validated = $request->validate([
+            'kind' => 'required|in:merged_pull_requests,commits',
+            'since' => 'required|date_format:Y-m-d',
+            'until' => 'required|date_format:Y-m-d|after_or_equal:since',
+        ]);
+
+        if (! $this->gitHubService->isConfigured()) {
+            return response()->json(['message' => 'GitHub is not connected. An admin needs to set GITHUB_TOKEN on the server.'], 422);
+        }
+
+        try {
+            $result = $this->gitHubService->activityForClient($client->id, $validated['kind'], $validated['since'], $validated['until']);
+        } catch (\Throwable $e) {
+            return response()->json(['message' => $e->getMessage()], 502);
+        }
+
+        if ($result['repos'] === []) {
+            return response()->json(['message' => "{$client->company_name} has no GitHub repositories linked. Link them on the client page first."], 422);
+        }
+
+        return response()->json($result);
+    }
+
     public function destroy(Client $client, ClientRepository $repository)
     {
         if ($repository->client_id !== $client->id) {
