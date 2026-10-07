@@ -83,6 +83,30 @@ class ClientRepositoryController extends Controller
         return response()->json($result);
     }
 
+    /** Change the branch (and active flag) of a linked repository, e.g. after the old branch was deleted. */
+    public function update(Request $request, Client $client, ClientRepository $repository)
+    {
+        if ($repository->client_id !== $client->id) {
+            return response()->json(['message' => 'Repository does not belong to this client.'], 403);
+        }
+
+        $validated = $request->validate([
+            'default_branch' => 'required|string|max:255',
+            'is_active' => 'sometimes|boolean',
+        ]);
+
+        $repository->update($validated);
+
+        return response()->json(['repository' => [
+            'id' => $repository->id,
+            'owner' => $repository->owner,
+            'repo_name' => $repository->repo_name,
+            'default_branch' => $repository->default_branch,
+            'is_active' => $repository->is_active,
+            'full_name' => $repository->full_name,
+        ]]);
+    }
+
     public function destroy(Client $client, ClientRepository $repository)
     {
         if ($repository->client_id !== $client->id) {

@@ -50,6 +50,8 @@ class CodeReviewController extends Controller
         try {
             $pulls = $this->github->fetchPullRequests($repository->owner, $repository->repo_name);
         } catch (\Throwable $e) {
+            Log::error('Code review: pull request lookup failed', ['repository' => $repository->full_name, 'error' => $e->getMessage()]);
+
             return response()->json(['message' => $e->getMessage()], 502);
         }
 

@@ -1,6 +1,6 @@
 {{-- "Import from GitHub": one invoice line per merged PR / commit in the selected client's linked repos.
      Lives inside the invoiceForm() Alpine scope and pushes onto its lineItems. --}}
-<div x-data="githubImport('{{ url('/clients') }}')" class="mb-6" data-github-import>
+<div x-data="githubImport('/clients')" class="mb-6" data-github-import>
     <div x-show="open" x-cloak class="rounded-lg border p-4 space-y-4" style="border-color: var(--border); background: var(--surface-2);">
         <div class="flex items-center justify-between gap-3">
             <h4 class="text-sm font-semibold text-white">Import from GitHub</h4>

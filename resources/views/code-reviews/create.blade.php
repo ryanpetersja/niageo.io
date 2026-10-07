@@ -43,7 +43,10 @@
                             <p class="text-xs text-faint mb-2">Open pull requests and those merged or closed in the last 30 days. Open ones are ticked by default; up to 15 per review.</p>
 
                             <div x-show="loading" class="text-sm text-muted py-3">Loading pull requests from GitHub…</div>
-                            <p x-show="error" x-text="error" class="text-sm py-2" style="color: var(--danger);"></p>
+                            <div x-show="error" class="py-2 text-sm" style="color: var(--danger);">
+                                <span x-text="error"></span>
+                                <button type="button" @click="loadPulls()" class="ml-2 underline">Retry</button>
+                            </div>
                             <p x-show="!loading && !error && loaded && !pulls.length" class="text-sm text-muted py-3">No open or recent pull requests in this repository.</p>
 
                             <ul x-show="pulls.length" class="divide-hair rounded-lg border" style="border-color: var(--border);">
@@ -112,14 +115,16 @@
                     if (!repo) return;
                     this.loading = true;
                     try {
-                        const response = await fetch(`{{ url('/clients/' . $client->id . '/repositories') }}/${repo.id}/pulls`, { headers: { Accept: 'application/json' } });
-                        const data = await response.json().catch(() => ({}));
-                        if (!response.ok) throw new Error(data.message || 'GitHub lookup failed.');
+                        const response = await fetch(`/clients/{{ $client->id }}/repositories/${repo.id}/pulls`, { headers: { Accept: 'application/json' } });
+                        const text = await response.text();
+                        let data = {};
+                        try { data = JSON.parse(text); } catch (e) { /* not JSON: an HTML error page from the server or a proxy */ }
+                        if (!response.ok) throw new Error(data.message || `GitHub lookup failed (HTTP ${response.status}${text ? ': ' + text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160) : ''}).`);
                         this.pulls = data.pulls || [];
                         this.selected = this.pulls.filter((p) => p.state === 'open' && !p.draft).slice(0, 15).map((p) => p.number);
                         this.loaded = true;
                     } catch (e) {
-                        this.error = e.message;
+                        this.error = e.message === 'Failed to fetch' ? 'The request to the server failed (network or mixed-content block). Reload the page and try again.' : e.message;
                     } finally {
                         this.loading = false;
                     }

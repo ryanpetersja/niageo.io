@@ -637,15 +637,34 @@
 
                 <div class="space-y-0">
                     <template x-for="repo in repos" :key="repo.id">
-                        <div class="flex justify-between items-center gap-3 py-2.5 border-b last:border-b-0 border-slate-800">
-                            <div class="min-w-0">
-                                <span class="font-medium text-sm break-all" x-text="repo.full_name"></span>
-                                <span class="text-xs text-slate-500 ml-2" x-text="repo.default_branch"></span>
-                                <span x-show="!repo.is_active" class="text-xs text-slate-500 italic ml-1">(inactive)</span>
+                        <div class="py-2.5 border-b last:border-b-0 border-slate-800">
+                            <div class="flex justify-between items-center gap-3">
+                                <div class="min-w-0">
+                                    <span class="font-medium text-sm break-all" x-text="repo.full_name"></span>
+                                    <button type="button" @click="startBranchEdit(repo)" class="text-xs text-slate-500 ml-2 hover:text-white" title="Change branch"><span x-text="repo.default_branch"></span> ✎</button>
+                                    <span x-show="!repo.is_active" class="text-xs text-slate-500 italic ml-1">(inactive)</span>
+                                </div>
+                                <div class="flex items-center gap-3 shrink-0">
+                                    <a :href="'{{ route('code-reviews.create', $client) }}?repository=' + repo.id" class="text-xs accent-ink hover:underline">Review PRs</a>
+                                    <button @click="deleteRepo(repo)" class="text-xs text-red-600 hover:text-red-800">Remove</button>
+                                </div>
                             </div>
-                            <div class="flex items-center gap-3 shrink-0">
-                                <a :href="'{{ route('code-reviews.create', $client) }}?repository=' + repo.id" class="text-xs accent-ink hover:underline">Review PRs</a>
-                                <button @click="deleteRepo(repo)" class="text-xs text-red-600 hover:text-red-800">Remove</button>
+                            {{-- Branch editor: the branch is used for reports and commit imports; fix it here when the old one is gone --}}
+                            <div x-show="branchEdit.id === repo.id" x-cloak class="mt-2 flex flex-col sm:flex-row sm:items-center gap-2">
+                                <template x-if="branchEdit.branches.length">
+                                    <select x-model="branchEdit.branch" class="field text-sm sm:w-auto">
+                                        <template x-for="br in branchEdit.branches" :key="br"><option :value="br" x-text="br"></option></template>
+                                    </select>
+                                </template>
+                                <template x-if="!branchEdit.branches.length">
+                                    <input type="text" x-model="branchEdit.branch" class="field text-sm sm:w-auto" placeholder="Branch name">
+                                </template>
+                                <span x-show="branchEdit.loading" class="text-xs text-slate-500">Loading branches from GitHub…</span>
+                                <div class="flex gap-2">
+                                    <button type="button" @click="saveBranch(repo)" :disabled="branchEdit.saving || !branchEdit.branch" class="btn btn-primary btn-sm">Save</button>
+                                    <button type="button" @click="branchEdit.id = null" class="btn btn-ghost btn-sm">Cancel</button>
+                                </div>
+                                <span x-show="branchEdit.error" x-text="branchEdit.error" class="text-xs text-red-400"></span>
                             </div>
                         </div>
                     </template>
@@ -836,6 +855,48 @@
                                     this.formError = 'Network error. Please try again.';
                                 }
                                 this.saving = false;
+                            },
+
+                            branchEdit: { id: null, branch: '', branches: [], loading: false, saving: false, error: '' },
+
+                            async startBranchEdit(repo) {
+                                this.branchEdit = { id: repo.id, branch: repo.default_branch, branches: [], loading: true, saving: false, error: '' };
+                                try {
+                                    const resp = await fetch(`/api/github/branches?owner=${encodeURIComponent(repo.owner)}&repo=${encodeURIComponent(repo.repo_name)}`, { headers: { 'Accept': 'application/json' } });
+                                    if (resp.ok) {
+                                        const branches = await resp.json();
+                                        this.branchEdit.branches = Array.isArray(branches) ? branches : [];
+                                        if (this.branchEdit.branches.length && !this.branchEdit.branches.includes(this.branchEdit.branch)) {
+                                            this.branchEdit.branch = this.branchEdit.branches.includes('main') ? 'main' : this.branchEdit.branches[0];
+                                        }
+                                    } else {
+                                        this.branchEdit.error = 'Could not load branches from GitHub; type the branch name instead.';
+                                    }
+                                } catch (e) {
+                                    this.branchEdit.error = 'Could not load branches from GitHub; type the branch name instead.';
+                                } finally {
+                                    this.branchEdit.loading = false;
+                                }
+                            },
+
+                            async saveBranch(repo) {
+                                this.branchEdit.saving = true;
+                                this.branchEdit.error = '';
+                                try {
+                                    const resp = await fetch(`/clients/${this.clientId}/repositories/${repo.id}`, {
+                                        method: 'PUT',
+                                        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ default_branch: this.branchEdit.branch.trim() }),
+                                    });
+                                    const data = await resp.json().catch(() => ({}));
+                                    if (!resp.ok) throw new Error(data.message || 'Could not save the branch.');
+                                    repo.default_branch = data.repository.default_branch;
+                                    this.branchEdit.id = null;
+                                } catch (e) {
+                                    this.branchEdit.error = e.message;
+                                } finally {
+                                    this.branchEdit.saving = false;
+                                }
                             },
 
                             async deleteRepo(repo) {

@@ -141,6 +141,20 @@ class CodeReviewTest extends TestCase
         Http::assertNotSent(fn (Request $r) => str_contains($r->url(), 'anthropic'));
     }
 
+    public function test_a_linked_repository_branch_can_be_changed(): void
+    {
+        $this->actingAs($this->user)
+            ->putJson(route('repositories.update', ['client' => $this->client, 'repository' => $this->repo]), ['default_branch' => 'production'])
+            ->assertOk()
+            ->assertJsonPath('repository.default_branch', 'production');
+        $this->assertSame('production', $this->repo->fresh()->default_branch);
+
+        $other = Client::create(['company_name' => 'Other', 'billing_terms' => 'net_30', 'is_active' => true]);
+        $this->actingAs($this->user)
+            ->putJson(route('repositories.update', ['client' => $other, 'repository' => $this->repo]), ['default_branch' => 'x'])
+            ->assertForbidden();
+    }
+
     public function test_review_pages_render(): void
     {
         $this->actingAs($this->user)->get(route('code-reviews.create', $this->client))->assertOk()->assertSee('acme/portal');
