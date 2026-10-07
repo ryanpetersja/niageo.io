@@ -73,6 +73,11 @@ class Client extends Model
         return $this->hasMany(Scope::class);
     }
 
+    public function codeReviews(): HasMany
+    {
+        return $this->hasMany(CodeReview::class)->latest();
+    }
+
     public function billingPlans(): HasMany
     {
         return $this->hasMany(BillingPlan::class)->orderBy('name');

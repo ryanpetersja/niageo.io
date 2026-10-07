@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ClientRepository extends Model
 {
@@ -15,6 +16,7 @@ class ClientRepository extends Model
         'owner',
         'repo_name',
         'default_branch',
+        'deploy_script',
         'is_active',
     ];
 
@@ -25,6 +27,11 @@ class ClientRepository extends Model
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);
+    }
+
+    public function codeReviews(): HasMany
+    {
+        return $this->hasMany(CodeReview::class)->latest();
     }
 
     public function getFullNameAttribute(): string

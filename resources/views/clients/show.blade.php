@@ -637,13 +637,16 @@
 
                 <div class="space-y-0">
                     <template x-for="repo in repos" :key="repo.id">
-                        <div class="flex justify-between items-center py-2.5 border-b last:border-b-0 border-slate-800">
-                            <div>
-                                <span class="font-medium text-sm" x-text="repo.full_name"></span>
+                        <div class="flex justify-between items-center gap-3 py-2.5 border-b last:border-b-0 border-slate-800">
+                            <div class="min-w-0">
+                                <span class="font-medium text-sm break-all" x-text="repo.full_name"></span>
                                 <span class="text-xs text-slate-500 ml-2" x-text="repo.default_branch"></span>
                                 <span x-show="!repo.is_active" class="text-xs text-slate-500 italic ml-1">(inactive)</span>
                             </div>
-                            <button @click="deleteRepo(repo)" class="text-xs text-red-600 hover:text-red-800">Remove</button>
+                            <div class="flex items-center gap-3 shrink-0">
+                                <a :href="'{{ route('code-reviews.create', $client) }}?repository=' + repo.id" class="text-xs accent-ink hover:underline">Review PRs</a>
+                                <button @click="deleteRepo(repo)" class="text-xs text-red-600 hover:text-red-800">Remove</button>
+                            </div>
                         </div>
                     </template>
                 </div>
@@ -1128,6 +1131,35 @@
                     </div>
                 @empty
                     <p class="text-slate-400 text-sm">No scopes yet.</p>
+                @endforelse
+            </div>
+
+            <!-- Code Reviews -->
+            <div class="mt-6 card p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-white">Code Reviews</h3>
+                    <div class="flex items-center gap-4">
+                        <a href="{{ route('code-reviews.index') }}" class="text-sm text-muted hover:underline">All reviews</a>
+                        @if($client->repositories->where('is_active', true)->isNotEmpty())
+                            <a href="{{ route('code-reviews.create', $client) }}" class="text-sm accent-ink hover:underline">+ Review PRs</a>
+                        @endif
+                    </div>
+                </div>
+                @forelse($client->codeReviews as $review)
+                    @php $counts = array_count_values(array_column($review->sections['pull_requests'] ?? [], 'recommendation')); @endphp
+                    <div class="flex flex-wrap justify-between items-center gap-x-4 gap-y-1 py-3 border-b last:border-b-0 border-slate-800">
+                        <div class="min-w-0 flex-1">
+                            <a href="{{ route('code-reviews.show', $review) }}" class="accent-ink hover:underline text-sm font-medium break-words">{{ $review->title }}</a>
+                            <div class="text-xs text-slate-500">{{ $review->repository->full_name }} · {{ $review->created_at->format('M d, Y') }}</div>
+                        </div>
+                        <div class="flex gap-1.5">
+                            @if(! empty($counts['merge']))<span class="badge badge-good">{{ $counts['merge'] }} merge</span>@endif
+                            @if(! empty($counts['merge_with_caution']))<span class="badge badge-warn">{{ $counts['merge_with_caution'] }} caution</span>@endif
+                            @if(! empty($counts['hold']))<span class="badge badge-danger">{{ $counts['hold'] }} hold</span>@endif
+                        </div>
+                    </div>
+                @empty
+                    <p class="text-slate-400 text-sm">No reviews yet. {{ $client->repositories->where('is_active', true)->isEmpty() ? 'Link a GitHub repository first.' : 'Pick pull requests to get merge advice, deployment steps and database changes.' }}</p>
                 @endforelse
             </div>
 

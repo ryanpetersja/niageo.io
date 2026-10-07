@@ -55,7 +55,9 @@ class ClientController extends Controller
 
     public function show(Client $client)
     {
-        $client->load(['contacts', 'pricingPresets.items', 'billingPlans.items', 'monitoredEndpoints', 'services', 'scopes' => function ($q) {
+        $client->load(['contacts', 'pricingPresets.items', 'billingPlans.items', 'monitoredEndpoints', 'services', 'codeReviews' => function ($q) {
+            $q->with('repository')->limit(8);
+        }, 'scopes' => function ($q) {
             $q->latest()->limit(10);
         }, 'invoices' => function ($q) {
             $q->latest()->limit(10);

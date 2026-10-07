@@ -5,6 +5,7 @@ use App\Http\Controllers\BillingPlanController;
 use App\Http\Controllers\BrandingSettingsController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\ClientRepositoryController;
+use App\Http\Controllers\CodeReviewController;
 use App\Http\Controllers\LogController;
 use App\Http\Controllers\ClientServerController;
 use App\Http\Controllers\DashboardController;
@@ -64,6 +65,14 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/clients/{client}/repositories', [ClientRepositoryController::class, 'store'])->name('repositories.store');
     Route::delete('/clients/{client}/repositories/{repository}', [ClientRepositoryController::class, 'destroy'])->name('repositories.destroy');
     Route::get('/clients/{client}/github-activity', [ClientRepositoryController::class, 'activity'])->name('clients.github-activity');
+
+    // Code reviews (AI review of pull requests for deployment)
+    Route::get('/code-reviews', [CodeReviewController::class, 'index'])->name('code-reviews.index');
+    Route::get('/clients/{client}/code-reviews/create', [CodeReviewController::class, 'create'])->name('code-reviews.create');
+    Route::get('/clients/{client}/repositories/{repository}/pulls', [CodeReviewController::class, 'pulls'])->name('code-reviews.pulls');
+    Route::post('/clients/{client}/code-reviews', [CodeReviewController::class, 'store'])->name('code-reviews.store');
+    Route::get('/code-reviews/{codeReview}', [CodeReviewController::class, 'show'])->name('code-reviews.show');
+    Route::delete('/code-reviews/{codeReview}', [CodeReviewController::class, 'destroy'])->name('code-reviews.destroy');
     Route::get('/api/github/repos', [ClientRepositoryController::class, 'githubRepos'])->name('api.github.repos');
     Route::get('/api/github/branches', [ClientRepositoryController::class, 'githubBranches'])->name('api.github.branches');
 

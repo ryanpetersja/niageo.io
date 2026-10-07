@@ -211,6 +211,140 @@ class GitHubService
         return ['repos' => $names, 'items' => array_slice($items, 0, self::ACTIVITY_LIMIT), 'truncated' => $truncated];
     }
 
+    /**
+     * Pull requests to offer for review: every open PR (however old), then those merged or closed
+     * in the last $recentDays, newest activity first. Each entry is a compact summary (no diff).
+     */
+    public function fetchPullRequests(string $owner, string $repo, int $recentDays = 30, int $limit = 50): array
+    {
+        $cutoff = now()->subDays($recentDays);
+        $pulls = [];
+
+        foreach (['open', 'closed'] as $state) {
+            $page = 1;
+            $perPage = 50;
+
+            do {
+                $response = Http::withHeaders([
+                    'Authorization' => 'Bearer ' . $this->token(),
+                    'Accept' => 'application/vnd.github+json',
+                ])->get("{$this->baseUrl}/repos/{$owner}/{$repo}/pulls", [
+                    'state' => $state,
+                    'sort' => 'updated',
+                    'direction' => 'desc',
+                    'per_page' => $perPage,
+                    'page' => $page,
+                ]);
+
+                if ($response->failed()) {
+                    Log::warning("GitHub API: pull request list failed for {$owner}/{$repo}", ['status' => $response->status(), 'body' => $response->body()]);
+                    throw new \RuntimeException("GitHub could not list pull requests for {$owner}/{$repo} (HTTP {$response->status()}).");
+                }
+
+                $items = $response->json() ?? [];
+                $stale = false;
+                foreach ($items as $item) {
+                    if ($state === 'closed' && \Carbon\Carbon::parse($item['updated_at'] ?? '1970-01-01')->lt($cutoff)) {
+                        $stale = true; // sorted by updated desc: everything after this is older
+                        break;
+                    }
+                    $pulls[] = $this->summarisePull($item, "{$owner}/{$repo}");
+                }
+
+                $page++;
+            } while (! $stale && count($items) === $perPage && count($pulls) < $limit);
+
+            if (count($pulls) >= $limit) {
+                break;
+            }
+        }
+
+        return array_slice($pulls, 0, $limit);
+    }
+
+    /** One pull request with its body and merge state. */
+    public function fetchPullRequest(string $owner, string $repo, int $number): array
+    {
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . $this->token(),
+            'Accept' => 'application/vnd.github+json',
+        ])->get("{$this->baseUrl}/repos/{$owner}/{$repo}/pulls/{$number}");
+
+        if ($response->failed()) {
+            throw new \RuntimeException("GitHub could not load pull request #{$number} in {$owner}/{$repo} (HTTP {$response->status()}).");
+        }
+
+        $item = $response->json() ?? [];
+
+        return $this->summarisePull($item, "{$owner}/{$repo}") + [
+            'body' => trim((string) ($item['body'] ?? '')),
+            'mergeable_state' => $item['mergeable_state'] ?? 'unknown',
+            'commits' => (int) ($item['commits'] ?? 0),
+            'changed_files' => (int) ($item['changed_files'] ?? 0),
+            'additions' => (int) ($item['additions'] ?? 0),
+            'deletions' => (int) ($item['deletions'] ?? 0),
+        ];
+    }
+
+    /**
+     * Files changed by a pull request, with their unified-diff patch (GitHub omits the patch
+     * for very large or binary files).
+     *
+     * @return array<int, array{filename: string, status: string, additions: int, deletions: int, patch: string}>
+     */
+    public function fetchPullRequestFiles(string $owner, string $repo, int $number, int $maxFiles = 300): array
+    {
+        $files = [];
+        $page = 1;
+        $perPage = 100;
+
+        do {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->token(),
+                'Accept' => 'application/vnd.github+json',
+            ])->get("{$this->baseUrl}/repos/{$owner}/{$repo}/pulls/{$number}/files", ['per_page' => $perPage, 'page' => $page]);
+
+            if ($response->failed()) {
+                throw new \RuntimeException("GitHub could not load the files of pull request #{$number} (HTTP {$response->status()}).");
+            }
+
+            $items = $response->json() ?? [];
+            foreach ($items as $item) {
+                $files[] = [
+                    'filename' => (string) ($item['filename'] ?? ''),
+                    'status' => (string) ($item['status'] ?? 'modified'),
+                    'additions' => (int) ($item['additions'] ?? 0),
+                    'deletions' => (int) ($item['deletions'] ?? 0),
+                    'patch' => (string) ($item['patch'] ?? ''),
+                ];
+            }
+
+            $page++;
+        } while (count($items) === $perPage && count($files) < $maxFiles);
+
+        return $files;
+    }
+
+    protected function summarisePull(array $item, string $repo): array
+    {
+        $merged = ! empty($item['merged_at']) || ! empty($item['merged']);
+
+        return [
+            'number' => (int) ($item['number'] ?? 0),
+            'title' => trim((string) ($item['title'] ?? '')),
+            'author' => $item['user']['login'] ?? 'unknown',
+            'state' => $merged ? 'merged' : (string) ($item['state'] ?? 'open'),
+            'draft' => (bool) ($item['draft'] ?? false),
+            'base' => $item['base']['ref'] ?? '',
+            'head' => $item['head']['ref'] ?? '',
+            'created_at' => substr((string) ($item['created_at'] ?? ''), 0, 10),
+            'updated_at' => substr((string) ($item['updated_at'] ?? ''), 0, 10),
+            'merged_at' => $merged ? substr((string) ($item['merged_at'] ?? ''), 0, 10) : null,
+            'url' => (string) ($item['html_url'] ?? ''),
+            'repo' => $repo,
+        ];
+    }
+
     public function isConfigured(): bool
     {
         return ! empty(config('services.github.token'));

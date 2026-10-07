@@ -24,6 +24,7 @@ class AiUsageService
         'scope_sections' => 'Scope builder — sections',
         'scope_items' => 'Scope builder — items',
         'scope_refine' => 'Scope builder — refine',
+        'code_review' => 'Code reviews',
     ];
 
     public const THRESHOLDS = [50, 80, 100];
