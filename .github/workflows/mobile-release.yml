@@ -1,0 +1,79 @@
+# Builds the Android app whenever mobile/ changes on main and publishes the APK to the
+# website's "Mobile app" page. Needs two repository secrets:
+#   APP_RELEASE_URL    e.g. https://niageo-io.on-forge.com
+#   APP_RELEASE_TOKEN  the same value as APP_RELEASE_TOKEN in the server's .env
+# Without them the APK is still built and attached to the workflow run as an artifact.
+name: Mobile app release (Android)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/mobile-release.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: mobile-release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build and publish APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      APP_RELEASE_URL: ${{ secrets.APP_RELEASE_URL }}
+      APP_RELEASE_TOKEN: ${{ secrets.APP_RELEASE_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Version from pubspec
+        id: version
+        run: |
+          NAME=$(grep '^version:' pubspec.yaml | sed -E 's/^version:[[:space:]]*//; s/\+.*$//')
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "Building $NAME build ${{ github.run_number }}"
+
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+
+      - name: Build APK
+        run: flutter build apk --release --build-name=${{ steps.version.outputs.name }} --build-number=${{ github.run_number }}
+
+      - name: Keep the APK with the workflow run
+        uses: actions/upload-artifact@v4
+        with:
+          name: niageo-ops-${{ steps.version.outputs.name }}-${{ github.run_number }}
+          path: mobile/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
+
+      - name: Publish to the website
+        if: ${{ env.APP_RELEASE_URL != '' && env.APP_RELEASE_TOKEN != '' }}
+        run: |
+          NOTES=$(git log -1 --pretty=%s)
+          curl --fail --silent --show-error -X POST "${APP_RELEASE_URL%/}/api/v1/app-releases" \
+            -H "Accept: application/json" \
+            -H "Authorization: Bearer $APP_RELEASE_TOKEN" \
+            -F "version=${{ steps.version.outputs.name }}" \
+            -F "build_number=${{ github.run_number }}" \
+            -F "git_sha=${{ github.sha }}" \
+            -F "notes=$NOTES" \
+            -F "apk=@build/app/outputs/flutter-apk/app-release.apk"
+          echo
+          echo "Published ${{ steps.version.outputs.name }} build ${{ github.run_number }} to $APP_RELEASE_URL/app"

@@ -88,3 +88,25 @@ Models are hand-written (`fromJson`), no code generation to run.
 | GET | `/api/v1/billing-plans`, `/api/v1/billing-plans/{id}` | plans with summary; detail with upcoming periods, items, invoices |
 | POST | `/api/v1/billing-plans/{id}/generate` | create the next period's draft invoice |
 | POST | `/api/v1/billing-plans/{id}/status` | `status`: active, paused, ended |
+
+## Releases (APK on the website)
+
+Every push to `main` that touches `mobile/` runs `.github/workflows/mobile-release.yml`:
+analyze, test, `flutter build apk --release` (version from `pubspec.yaml`, build number =
+the workflow run number), then it publishes the APK to the website's **Mobile app** page
+(`/app`), which shows the release date and time and keeps earlier builds. The app's
+Settings screen compares its own build number with the latest published one and offers
+the download.
+
+One-time setup:
+
+1. Set `APP_RELEASE_TOKEN` in the server's `.env` (any long random string).
+2. Add two repository secrets on GitHub: `APP_RELEASE_URL` (e.g. `https://niageo-io.on-forge.com`)
+   and `APP_RELEASE_TOKEN` (the same value as on the server).
+3. Make sure the server accepts uploads of the APK's size: `upload_max_filesize` and
+   `post_max_size` in php.ini and `client_max_body_size` in the site's nginx config
+   (100M is plenty).
+
+Admins can also upload a build made locally from the same page. Bump `version:` in
+`pubspec.yaml` when you want the version number to change; the build number increases on
+its own.

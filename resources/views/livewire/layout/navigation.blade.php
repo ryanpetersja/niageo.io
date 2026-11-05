@@ -91,6 +91,7 @@ new class extends Component
                         </button>
                     </x-slot>
                     <x-slot name="content">
+                        <x-dropdown-link :href="route('app.releases')" wire:navigate>Mobile app</x-dropdown-link>
                         <x-dropdown-link :href="route('profile')" wire:navigate>Profile</x-dropdown-link>
                         <button wire:click="logout" class="w-full text-start">
                             <x-dropdown-link>Log Out</x-dropdown-link>
@@ -135,6 +136,7 @@ new class extends Component
                 <div class="font-medium text-sm text-slate-400">{{ auth()->user()->email }}</div>
             </div>
             <div class="mt-3 space-y-1">
+                <x-responsive-nav-link :href="route('app.releases')" wire:navigate>Mobile app</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('profile')" wire:navigate>Profile</x-responsive-nav-link>
                 <button wire:click="logout" class="w-full text-start">
                     <x-responsive-nav-link>Log Out</x-responsive-nav-link>

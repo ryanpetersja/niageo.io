@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AppReleaseController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BillingPlanController;
 use App\Http\Controllers\Api\ClientController;
@@ -22,12 +23,15 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->name('api.')->group(function () {
     Route::post('auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1')->name('auth.login');
+    // CI publishes app builds with the APP_RELEASE_TOKEN, not a user token.
+    Route::post('app-releases', [AppReleaseController::class, 'store'])->middleware('throttle:10,1')->name('app-releases.store');
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
         Route::get('auth/me', [AuthController::class, 'me'])->name('auth.me');
 
         Route::get('dashboard', DashboardController::class)->name('dashboard');
+        Route::get('app-releases/latest', [AppReleaseController::class, 'latest'])->name('app-releases.latest');
 
         Route::get('clients', [ClientController::class, 'index'])->name('clients.index');
         Route::post('clients', [ClientController::class, 'store'])->name('clients.store');

@@ -35,6 +35,11 @@ return [
         'token' => env('GITHUB_TOKEN'),
     ],
 
+    // Shared secret the GitHub Actions workflow uses to publish mobile app builds.
+    'app_releases' => [
+        'token' => env('APP_RELEASE_TOKEN'),
+    ],
+
     'anthropic' => [
         'api_key' => env('ANTHROPIC_API_KEY'),
         'model' => env('ANTHROPIC_MODEL', 'claude-sonnet-4-5-20250929'),

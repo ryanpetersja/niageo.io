@@ -4,6 +4,7 @@ use App\Http\Controllers\AiUsageController;
 use App\Http\Controllers\BillingPlanController;
 use App\Http\Controllers\BrandingSettingsController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\AppReleaseController;
 use App\Http\Controllers\ClientRepositoryController;
 use App\Http\Controllers\CodeReviewController;
 use App\Http\Controllers\LogController;
@@ -66,6 +67,11 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/clients/{client}/repositories/{repository}', [ClientRepositoryController::class, 'update'])->name('repositories.update');
     Route::delete('/clients/{client}/repositories/{repository}', [ClientRepositoryController::class, 'destroy'])->name('repositories.destroy');
     Route::get('/clients/{client}/github-activity', [ClientRepositoryController::class, 'activity'])->name('clients.github-activity');
+
+    // Mobile app builds (APK downloads)
+    Route::get('/app', [AppReleaseController::class, 'index'])->name('app.releases');
+    Route::post('/app/releases', [AppReleaseController::class, 'store'])->middleware('can:manage-settings')->name('app.releases.store');
+    Route::delete('/app/releases/{release}', [AppReleaseController::class, 'destroy'])->middleware('can:manage-settings')->name('app.releases.destroy');
 
     // Code reviews (AI review of pull requests for deployment)
     Route::get('/code-reviews', [CodeReviewController::class, 'index'])->name('code-reviews.index');
@@ -150,3 +156,6 @@ Route::view('profile', 'profile')
     ->name('profile');
 
 require __DIR__.'/auth.php';
+
+// Signed-in users download directly; phones use a short-lived signed link (no session needed).
+Route::get('/app/releases/{release}/download', [AppReleaseController::class, 'download'])->name('app.releases.download');
