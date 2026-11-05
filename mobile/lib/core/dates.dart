@@ -25,3 +25,13 @@ String dueLabel(DateTime dueDate, {DateTime? today}) {
   if (days == -1) return 'Overdue by 1 day';
   return 'Overdue by ${-days} days';
 }
+
+/// "just now", "5 min ago", "3 h ago", "2 days ago".
+String timeAgo(DateTime moment, {DateTime? now}) {
+  final diff = (now ?? DateTime.now()).difference(moment.toLocal());
+  if (diff.inSeconds < 60) return 'just now';
+  if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
+  if (diff.inHours < 24) return '${diff.inHours} h ago';
+  if (diff.inDays == 1) return 'yesterday';
+  return '${diff.inDays} days ago';
+}

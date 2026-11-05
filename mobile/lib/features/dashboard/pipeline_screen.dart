@@ -15,6 +15,7 @@ import '../invoices/invoice_models.dart';
 import '../invoices/widgets/invoice_tile.dart';
 import 'dashboard_models.dart';
 import 'dashboard_repository.dart';
+import 'widgets/attention_card.dart';
 
 /// Home: how much is out there, what is overdue, and where every invoice sits.
 class PipelineScreen extends ConsumerWidget {
@@ -138,6 +139,10 @@ class _PipelineBody extends ConsumerWidget {
             ),
           ],
         ),
+        if ((data.operations?.alertCount ?? 0) > 0) ...[
+          const SizedBox(height: 16),
+          AttentionCard(ops: data.operations!),
+        ],
         const SizedBox(height: 16),
         SectionCard(
           title: 'Pipeline',

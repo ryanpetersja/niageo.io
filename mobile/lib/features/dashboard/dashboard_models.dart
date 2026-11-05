@@ -1,5 +1,8 @@
 import '../../core/json.dart';
 import '../invoices/invoice_models.dart';
+import '../operations/billing_plan_models.dart';
+import '../operations/subscription_models.dart';
+import '../operations/uptime_models.dart';
 
 class Metrics {
   const Metrics({
@@ -53,6 +56,55 @@ class PipelineStage {
   );
 }
 
+/// What needs attention operationally: sites down, bills due, plans waiting to be invoiced.
+class OperationsSummary {
+  const OperationsSummary({
+    required this.uptime,
+    this.troubled = const [],
+    required this.subscriptions,
+    this.billAlerts = const [],
+    this.activePlans = 0,
+    this.plansDueNow = 0,
+    this.plansMonthlyValue = 0,
+    this.duePlans = const [],
+    this.nextPlan,
+  });
+
+  final UptimeSummary uptime;
+  final List<MonitoredEndpoint> troubled;
+  final SubscriptionSummary subscriptions;
+  final List<SubscriptionBill> billAlerts;
+  final int activePlans;
+  final int plansDueNow;
+  final double plansMonthlyValue;
+  final List<BillingPlan> duePlans;
+  final BillingPlan? nextPlan;
+
+  int get alertCount => troubled.length + billAlerts.length + duePlans.length;
+
+  factory OperationsSummary.fromJson(Map<String, dynamic> json) {
+    final uptime = asMap(json['uptime']) ?? const {};
+    final subscriptions = asMap(json['subscriptions']) ?? const {};
+    final plans = asMap(json['billing_plans']) ?? const {};
+    final next = asMap(plans['next']);
+    return OperationsSummary(
+      uptime: UptimeSummary.fromJson(uptime),
+      troubled: asList(uptime['troubled'])
+          .map(MonitoredEndpoint.fromJson)
+          .toList(),
+      subscriptions: SubscriptionSummary.fromJson(subscriptions),
+      billAlerts: asList(subscriptions['alerts'])
+          .map(SubscriptionBill.fromJson)
+          .toList(),
+      activePlans: asInt(plans['active_count']),
+      plansDueNow: asInt(plans['due_now_count']),
+      plansMonthlyValue: asDouble(plans['monthly_value']),
+      duePlans: asList(plans['due']).map(BillingPlan.fromJson).toList(),
+      nextPlan: next == null ? null : BillingPlan.fromJson(next),
+    );
+  }
+}
+
 class Dashboard {
   const Dashboard({
     required this.metrics,
@@ -61,6 +113,7 @@ class Dashboard {
     required this.collectedLastMonth,
     required this.recentInvoices,
     required this.overdueInvoices,
+    this.operations,
   });
 
   final Metrics metrics;
@@ -69,6 +122,7 @@ class Dashboard {
   final double collectedLastMonth;
   final List<Invoice> recentInvoices;
   final List<Invoice> overdueInvoices;
+  final OperationsSummary? operations;
 
   PipelineStage? stage(InvoiceStatus status) =>
       pipeline.where((s) => s.status == status).firstOrNull;
@@ -84,5 +138,8 @@ class Dashboard {
     overdueInvoices: asList(json['overdue_invoices'])
         .map(Invoice.fromJson)
         .toList(),
+    operations: asMap(json['operations']) == null
+        ? null
+        : OperationsSummary.fromJson(asMap(json['operations'])!),
   );
 }

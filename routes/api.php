@@ -1,10 +1,13 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BillingPlanController;
 use App\Http\Controllers\Api\ClientController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\SubscriptionBillController;
+use App\Http\Controllers\Api\UptimeController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -42,5 +45,16 @@ Route::prefix('v1')->name('api.')->group(function () {
         Route::post('invoices/{invoice}/payments', [InvoiceController::class, 'storePayment'])->name('invoices.payments.store');
         Route::delete('payments/{payment}', [InvoiceController::class, 'destroyPayment'])->name('payments.destroy');
         Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'pdf'])->name('invoices.pdf');
+
+        // Operations: uptime monitoring, subscription bills, recurring billing plans
+        Route::get('uptime', [UptimeController::class, 'index'])->name('uptime.index');
+        Route::get('uptime/{endpoint}', [UptimeController::class, 'show'])->name('uptime.show');
+        Route::post('uptime/{endpoint}/check', [UptimeController::class, 'check'])->name('uptime.check');
+        Route::get('subscriptions', [SubscriptionBillController::class, 'index'])->name('subscriptions.index');
+        Route::post('subscriptions/{subscription}/mark-paid', [SubscriptionBillController::class, 'markPaid'])->name('subscriptions.mark-paid');
+        Route::get('billing-plans', [BillingPlanController::class, 'index'])->name('billing-plans.index');
+        Route::get('billing-plans/{billingPlan}', [BillingPlanController::class, 'show'])->name('billing-plans.show');
+        Route::post('billing-plans/{billingPlan}/generate', [BillingPlanController::class, 'generate'])->name('billing-plans.generate');
+        Route::post('billing-plans/{billingPlan}/status', [BillingPlanController::class, 'setStatus'])->name('billing-plans.status');
     });
 });

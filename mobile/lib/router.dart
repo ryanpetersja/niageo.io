@@ -10,6 +10,12 @@ import 'features/dashboard/pipeline_screen.dart';
 import 'features/invoices/invoice_detail_screen.dart';
 import 'features/invoices/invoice_editor_screen.dart';
 import 'features/invoices/invoices_screen.dart';
+import 'features/operations/billing_plan_detail_screen.dart';
+import 'features/operations/billing_plans_screen.dart';
+import 'features/operations/endpoint_detail_screen.dart';
+import 'features/operations/operations_screen.dart';
+import 'features/operations/subscriptions_screen.dart';
+import 'features/operations/uptime_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'shell.dart';
 
@@ -85,6 +91,44 @@ final routerProvider = Provider<GoRouter>((ref) {
                     builder: (context, state) => ClientDetailScreen(
                       clientId: int.parse(state.pathParameters['id']!),
                     ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/ops',
+                builder: (context, state) => const OperationsScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'uptime',
+                    builder: (context, state) => const UptimeScreen(),
+                    routes: [
+                      GoRoute(
+                        path: ':id',
+                        builder: (context, state) => EndpointDetailScreen(
+                          endpointId: int.parse(state.pathParameters['id']!),
+                        ),
+                      ),
+                    ],
+                  ),
+                  GoRoute(
+                    path: 'subscriptions',
+                    builder: (context, state) => const SubscriptionsScreen(),
+                  ),
+                  GoRoute(
+                    path: 'billing-plans',
+                    builder: (context, state) => const BillingPlansScreen(),
+                    routes: [
+                      GoRoute(
+                        path: ':id',
+                        builder: (context, state) => BillingPlanDetailScreen(
+                          planId: int.parse(state.pathParameters['id']!),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
