@@ -60,6 +60,7 @@ class CodeReviewTest extends TestCase
 
     public function test_pull_picker_lists_open_and_recent_pull_requests(): void
     {
+        $this->travelTo('2026-10-07 12:00:00'); // the fixture dates below are relative to this day
         Http::fake([
             'api.github.com/repos/acme/portal/pulls?*' => fn (Request $request) => Http::response(
                 str_contains($request->url(), 'state=open')

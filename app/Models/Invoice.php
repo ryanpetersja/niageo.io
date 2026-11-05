@@ -67,7 +67,8 @@ class Invoice extends Model
 
     public function statusHistory(): HasMany
     {
-        return $this->hasMany(InvoiceStatusHistory::class)->orderBy('created_at', 'desc');
+        // Entries written in the same second (create + send) must still come back newest first.
+        return $this->hasMany(InvoiceStatusHistory::class)->orderBy('created_at', 'desc')->orderBy('id', 'desc');
     }
 
     public function pricingPreset(): BelongsTo
